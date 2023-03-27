@@ -507,6 +507,7 @@ include("AlgebraicGeometry/Miscellaneous/basics.jl")
 include("InvariantTheory/InvariantTheory.jl")
 
 include("../experimental/Experimental.jl")
+include("../experimental/main.jl")
 include("Rings/binomial_ideals.jl") # uses QQAbModule from experimental/Rings/QQAbAndPChars.jl
 
 if is_dev

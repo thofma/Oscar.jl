@@ -34,4 +34,3 @@ include("Schemes/BlowupMorphism.jl")
 include("Schemes/ToricSchemes/include.jl")
 
 include("ExteriorAlgebra/ExteriorAlgebra.jl")
-include("basisLieHighestWeight/main.jl")
