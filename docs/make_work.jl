@@ -4,6 +4,7 @@
 #
 module BuildDoc
 
+import Glob
 using Documenter, DocumenterCitations
 
 
@@ -29,6 +30,17 @@ function doit(Oscar::Module; strict::Bool = true, local_build::Bool = false, doc
   # include the list of pages, performing substitutions
   s = read(joinpath(Oscar.oscardir, "docs", "doc.main"), String)
   doc = eval(Meta.parse(s))
+  collected = []
+  for fname in Glob.glob("experimental/*/docs/doc.main")
+    prepend = SubString(fname, 1, length(fname) - 8)
+    prepend = prepend * "src/"
+    exp_s = read(Oscar.oscardir * "/" * fname, String)
+    exp_doc = eval(Meta.parse(exp_s))
+    exp_doc = [(key=>[prepend*mdfile for mdfile in docs]) for (key, docs) in exp_doc]
+    append!(collected, exp_doc)
+  end
+  push!(doc, ("Experimental" => collected))
+  println(doc)
 
   # Load the bibliography
   bib = CitationBibliography(joinpath(Oscar.oscardir, "docs", "oscar_references.bib"), sorting = :nyt)
