@@ -54,7 +54,7 @@ end
 ################################################################################
 
 @doc raw"""
-    TropicalHypersurface(f::AbstractAlgebra.Generic.MPoly{Oscar.TropicalSemiringElem{T}})
+    tropical_hypersurface(f::AbstractAlgebra.Generic.MPoly{Oscar.TropicalSemiringElem{T}})
 
 Return the tropical hypersurface of a tropical polynomial `f`.
 
@@ -69,11 +69,11 @@ julia> Txy,(x,y) = T["x","y"]
 julia> f = x+y+1
 x + y + (1)
 
-julia> Tf = TropicalHypersurface(f)
+julia> Tf = tropical_hypersurface(f)
 min tropical hypersurface embedded in 2-dimensional Euclidean space
 ```
 """
-function TropicalHypersurface(f::AbstractAlgebra.Generic.MPoly{Oscar.TropicalSemiringElem{T}}) where T
+function tropical_hypersurface(f::AbstractAlgebra.Generic.MPoly{Oscar.TropicalSemiringElem{T}}) where T
     if total_degree(f) <= 0
         error("Tropical hypersurfaces of constant polynomials not supported.")
     end
@@ -117,7 +117,7 @@ end
 # end
 
 @doc raw"""
-    TropicalHypersurface(f::MPolyRingElem,M::Union{typeof(min),typeof(max)}=min)
+    tropical_hypersurface(f::MPolyRingElem,M::Union{typeof(min),typeof(max)}=min)
 
 Given a polynomial `f` over a field with an intrinsic valuation (i.e., a field
 on which a function `valuation` is defined such as `PadicField(7,2)`),
@@ -132,16 +132,16 @@ julia> Kxy, (x,y) = K["x", "y"]
 
 julia> f = 7*x+y+49;
 
-julia> TropicalHypersurface(f, min)
+julia> tropical_hypersurface(f, min)
 min tropical hypersurface embedded in 2-dimensional Euclidean space
 
-julia> TropicalHypersurface(f, max)
+julia> tropical_hypersurface(f, max)
 max tropical hypersurface embedded in 2-dimensional Euclidean space
 ```
 """
-function TropicalHypersurface(f::MPolyRingElem,M::Union{typeof(min),typeof(max)}=min)
+function tropical_hypersurface(f::MPolyRingElem,M::Union{typeof(min),typeof(max)}=min)
     tropf = tropical_polynomial(f,M)
-    Tf = TropicalHypersurface(tropf)
+    Tf = tropical_hypersurface(tropf)
     w = Vector{fmpz}(pm_object(Tf).WEIGHTS)
     set_attribute!(Tf,:algebraic_polynomial,f)
     set_attribute!(Tf,:tropical_polynomial,tropf)
@@ -150,7 +150,7 @@ function TropicalHypersurface(f::MPolyRingElem,M::Union{typeof(min),typeof(max)}
 end
 
 @doc raw"""
-    TropicalHypersurface(f::MPolyRingElem,M::Union{typeof(min),typeof(max)}=min)
+    tropical_hypersurface(f::MPolyRingElem,M::Union{typeof(min),typeof(max)}=min)
 
 Construct the tropical hypersurface from a polynomial `f` and a map to the
 tropical semiring `val`.
@@ -165,13 +165,13 @@ The 7-adic valuation on Rational Field
 
 julia> f = 7*x1+x2+49;
 
-julia> TropicalHypersurface(f, val)
+julia> tropical_hypersurface(f, val)
 min tropical hypersurface embedded in 2-dimensional Euclidean space
 ```
 """
-function TropicalHypersurface(f::MPolyRingElem, val::TropicalSemiringMap)
+function tropical_hypersurface(f::MPolyRingElem, val::TropicalSemiringMap)
     tropf = tropical_polynomial(f,val)
-    Tf = TropicalHypersurface(tropf)
+    Tf = tropical_hypersurface(tropf)
     w = Vector{fmpz}(pm_object(Tf).WEIGHTS)
     set_attribute!(Tf,:algebraic_polynomial,f)
     set_attribute!(Tf,:tropical_polynomial,tropf)
@@ -226,7 +226,7 @@ julia> Txy,(x,y) = T["x","y"];
 
 julia> f = x+y+1;
 
-julia> tropicalLine = TropicalHypersurface(f);
+julia> tropicalLine = tropical_hypersurface(f);
 
 julia> dual_subdivision(tropicalLine)
 Subdivision of points in ambient dimension 3
@@ -254,7 +254,7 @@ julia> Txy,(x,y) = T["x","y"];
 
 julia> f = x+y+1;
 
-julia> TH = TropicalHypersurface(f);
+julia> TH = tropical_hypersurface(f);
 
 julia> polynomial(TH)
 x + y + (1)

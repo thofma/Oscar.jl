@@ -32,7 +32,7 @@ julia> S,(x,y) = RR["x","y"];
 julia> f = x^2+y^2+2
 x^2 + y^2 + (2)
 
-julia> hyp1 = TropicalHypersurface(f)
+julia> hyp1 = tropical_hypersurface(f)
 min tropical hypersurface embedded in 2-dimensional Euclidean space
 
 julia> convention(hyp1)
@@ -59,7 +59,7 @@ julia> S,(x,y) = RR["x","y"];
 julia> f = x^2+y^2+2
 x^2 + y^2 + (2)
 
-julia> hyp1 = TropicalHypersurface(f)
+julia> hyp1 = tropical_hypersurface(f)
 min tropical hypersurface embedded in 2-dimensional Euclidean space
 
 julia> pc = polyhedral_complex(hyp1)
@@ -95,10 +95,10 @@ x + y + (1)
 julia> f2 = x^2+y^2+RR(-6)
 x^2 + y^2 + (-6)
 
-julia> hyp1 = TropicalHypersurface(f1)
+julia> hyp1 = tropical_hypersurface(f1)
 min tropical hypersurface embedded in 2-dimensional Euclidean space
 
-julia> hyp2 = TropicalHypersurface(f2)
+julia> hyp2 = tropical_hypersurface(f2)
 min tropical hypersurface embedded in 2-dimensional Euclidean space
 
 julia> tv12 = intersect(hyp1, hyp2)
@@ -143,7 +143,7 @@ julia> S,(x,y) = RR["x","y"];
 
 julia> f = x+y+1;
 
-julia> tropicalLine = TropicalHypersurface(f);
+julia> tropicalLine = tropical_hypersurface(f);
 
 julia> ambient_dim(tropicalLine)
 2
@@ -176,7 +176,7 @@ julia> S,(x,y) = RR["x","y"];
 
 julia> f = x+y+1;
 
-julia> tropicalLine = TropicalHypersurface(f);
+julia> tropicalLine = tropical_hypersurface(f);
 
 julia> codim(tropicalLine)
 1
@@ -205,7 +205,7 @@ julia> S,(x,y) = RR["x","y"];
 
 julia> f = x+y+1;
 
-julia> tropicalLine = TropicalHypersurface(f);
+julia> tropicalLine = tropical_hypersurface(f);
 
 julia> dim(tropicalLine)
 1
@@ -234,7 +234,7 @@ julia> S,(x,y) = RR["x","y"];
 
 julia> f = x+y+1;
 
-julia> tropicalLine = TropicalHypersurface(f);
+julia> tropicalLine = tropical_hypersurface(f);
 
 julia> f_vector(tropicalLine)
 2-element Vector{Int64}:
@@ -265,7 +265,7 @@ julia> S,(x,y) = RR["x","y"];
 
 julia> f = x+y;
 
-julia> tropicalAndAffineLine = TropicalHypersurface(f);
+julia> tropicalAndAffineLine = tropical_hypersurface(f);
 
 julia> lineality_dim(tropicalAndAffineLine)
 1
@@ -298,7 +298,7 @@ julia> S,(x,y) = RR["x","y"];
 
 julia> f = x+y;
 
-julia> tropicalAndAffineLine = TropicalHypersurface(f);
+julia> tropicalAndAffineLine = tropical_hypersurface(f);
 
 julia> lineality_space(tropicalAndAffineLine)
 1-element SubObjectIterator{RayVector{QQFieldElem}}:
@@ -332,7 +332,7 @@ julia> S,(x,y) = RR["x","y"];
 
 julia> f = x+y+1;
 
-julia> tropicalLine = TropicalHypersurface(f);
+julia> tropicalLine = tropical_hypersurface(f);
 
 julia> maximal_polyhedra(tropicalLine)
 3-element SubObjectIterator{Polyhedron{QQFieldElem}}:
@@ -365,7 +365,7 @@ julia> S,(x,y) = RR["x","y"];
 
 julia> f = x+y+1;
 
-julia> tropicalLine = TropicalHypersurface(f);
+julia> tropicalLine = tropical_hypersurface(f);
 
 julia> n_maximal_polyhedra(tropicalLine)
 3
@@ -395,7 +395,7 @@ julia> S,(x,y) = RR["x","y"];
 
 julia> f = x+y+1;
 
-julia> tropicalLine = TropicalHypersurface(f);
+julia> tropicalLine = tropical_hypersurface(f);
 
 julia> npolyhedra(tropicalLine)
 4
@@ -425,7 +425,7 @@ julia> S,(x,y) = RR["x","y"];
 
 julia> f = x+y+1;
 
-julia> tropicalLine = TropicalHypersurface(f);
+julia> tropicalLine = tropical_hypersurface(f);
 
 julia> nvertices(tropicalLine)
 1
@@ -455,7 +455,7 @@ julia> S,(x,y) = RR["x","y"];
 
 julia> f = x+y+1;
 
-julia> tropicalLine = TropicalHypersurface(f);
+julia> tropicalLine = tropical_hypersurface(f);
 
 julia> is_pure(tropicalLine)
 true
@@ -484,7 +484,7 @@ julia> S,(x,y) = RR["x","y"];
 
 julia> f = x+y+1;
 
-julia> tropicalLine = TropicalHypersurface(f);
+julia> tropicalLine = tropical_hypersurface(f);
 
 julia> is_simplicial(tropicalLine)
 true
@@ -513,7 +513,7 @@ julia> S,(x,y) = RR["x","y"];
 
 julia> f1 = x+y+1;
 
-julia> tropicalLine = TropicalHypersurface(f1);
+julia> tropicalLine = tropical_hypersurface(f1);
 
 julia> vertices(tropicalLine)
 1-element SubObjectIterator{PointVector{QQFieldElem}}:
@@ -521,7 +521,7 @@ julia> vertices(tropicalLine)
 
 julia> f2 = 1*x^2+x*y+1*y^2+x+y+1;
 
-julia> tropicalQuadric = TropicalHypersurface(f1);
+julia> tropicalQuadric = tropical_hypersurface(f1);
 
 julia> vertices(tropicalQuadric)
 1-element SubObjectIterator{PointVector{QQFieldElem}}:
@@ -529,7 +529,7 @@ julia> vertices(tropicalQuadric)
 
 julia> f3 = x^3+x*y^2+x^2*y+y^3+x^2+x*y+y^2+x+y+1;
 
-julia> tropicalCubic = TropicalHypersurface(f3);
+julia> tropicalCubic = tropical_hypersurface(f3);
 
 julia> vertices(tropicalCubic)
 2-element SubObjectIterator{PointVector{QQFieldElem}}:
@@ -564,7 +564,7 @@ julia> S,(x,y) = RR["x","y"];
 
 julia> f = x+y+1;
 
-julia> tropicalLine = TropicalHypersurface(f);
+julia> tropicalLine = tropical_hypersurface(f);
 
 julia> weights(tropicalLine)
 pm::Vector<pm::Integer>
@@ -596,7 +596,7 @@ end
 # julia> f = x+y+1
 # x + y + (1)
 
-# julia> hyp = TropicalHypersurface(f)
+# julia> hyp = tropical_hypersurface(f)
 # A min tropical hypersurface embedded in 2-dimensional Euclidean space
 
 # julia> pc = PolyhedralComplex(hyp)
