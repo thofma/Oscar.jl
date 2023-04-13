@@ -83,7 +83,7 @@ function TropicalHypersurface(f::AbstractAlgebra.Generic.MPoly{Oscar.TropicalSem
     pmhypproj = Polymake.tropical.Hypersurface{M}(POLYNOMIAL=pmpoly)
     pmhyp = Polymake.tropical.affine_chart(pmhypproj)
     Vf = TropicalHypersurface{M, true}(PolyhedralComplex(pmhyp))
-    w = pmhypproj.WEIGHTS
+    w = Vector{fmpz}(pmhypproj.WEIGHTS)
     set_attribute!(Vf,:polymake_bigobject,pmhypproj)
     set_attribute!(Vf,:tropical_polynomial,f)
     set_attribute!(Vf,:weights,w)
@@ -142,7 +142,7 @@ max tropical hypersurface embedded in 2-dimensional Euclidean space
 function TropicalHypersurface(f::MPolyRingElem,M::Union{typeof(min),typeof(max)}=min)
     tropf = tropical_polynomial(f,M)
     Tf = TropicalHypersurface(tropf)
-    w = pm_object(Tf).WEIGHTS
+    w = Vector{fmpz}(pm_object(Tf).WEIGHTS)
     set_attribute!(Tf,:algebraic_polynomial,f)
     set_attribute!(Tf,:tropical_polynomial,tropf)
     set_attribute!(Tf,:weights,w)
@@ -172,7 +172,7 @@ min tropical hypersurface embedded in 2-dimensional Euclidean space
 function TropicalHypersurface(f::MPolyRingElem, val::TropicalSemiringMap)
     tropf = tropical_polynomial(f,val)
     Tf = TropicalHypersurface(tropf)
-    w = pm_object(Tf).WEIGHTS
+    w = Vector{fmpz}(pm_object(Tf).WEIGHTS)
     set_attribute!(Tf,:algebraic_polynomial,f)
     set_attribute!(Tf,:tropical_polynomial,tropf)
     set_attribute!(Tf,:weights,w)
