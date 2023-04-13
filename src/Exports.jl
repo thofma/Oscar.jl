@@ -801,6 +801,7 @@ export is_weakly_connected
 export is_welldefined
 export is_z_graded
 export is_zm_graded
+export is_embedded
 export isfinite
 export isometry_group
 export isomorphic_matroid
