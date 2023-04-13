@@ -90,31 +90,6 @@ function tropical_hypersurface(f::AbstractAlgebra.Generic.MPoly{Oscar.TropicalSe
     return Vf
 end
 
-# @doc raw"""
-#     tropical_variety(f::Union{AbstractAlgebra.Generic.MPoly{Oscar.TropicalSemiringElem{typeof(min)}},
-#                               AbstractAlgebra.Generic.MPoly{Oscar.TropicalSemiringElem{typeof(max)}}})
-
-# Return the tropical variety defined by a tropical polynomial in form of a TropicalHypersurface
-
-# # Examples
-# ```jldoctest
-# julia> T = TropicalSemiring(min)
-# Tropical ring (min)
-
-# julia> Txy,(x,y) = T["x","y"]
-# (Multivariate Polynomial Ring in x, y over Tropical ring (min), AbstractAlgebra.Generic.MPoly{Oscar.TropicalSemiringElem{typeof(min)}}[x, y])
-
-# julia> f = x+y+1
-# x + y + (1)
-
-# julia> Tf = TropicalHypersurface(f)
-# A min tropical hypersurface embedded in 2-dimensional Euclidean space
-# ```
-# """
-# function tropical_variety(f::Union{AbstractAlgebra.Generic.MPoly{Oscar.TropicalSemiringElem{typeof(min)}},
-#                                    AbstractAlgebra.Generic.MPoly{Oscar.TropicalSemiringElem{typeof(max)}}})
-#     return TropicalHypersurface(f)
-# end
 
 @doc raw"""
     tropical_hypersurface(f::MPolyRingElem,M::Union{typeof(min),typeof(max)}=min)
@@ -179,31 +154,6 @@ function tropical_hypersurface(f::MPolyRingElem, val::TropicalSemiringMap)
     return Tf
 end
 
-
-# @doc raw"""
-#     tropical_variety(f::MPolyRingElem, M::Union{typeof(min),typeof(max)})
-
-# Return the tropical variety of an algebraic polynomial in the form of a TropicalHypersurface.
-# If M=min, the tropical hypersurface will obey the min-convention.
-# If M=max, the tropical hypersurface will obey the max-convention.
-# If coefficient ring has a valuation, the tropical hypersurface will be constructed with respect to it.
-# If coefficient ring has no valuation, the tropical hypersurface will be constructed with respect to the trivial valuation.
-# The function is the same as TropicalHypersurface{M}(f).
-
-# # Examples
-# julia> K = PadicField(7, 2)
-
-# julia> Kxy, (x,y) = K["x", "y"]
-
-# julia> f = 7*x+y+49
-
-# julia> tropical_variety(f,min)
-
-# julia> tropical_variety(f,max)
-# """
-# function tropical_variety(f::MPolyRingElem, M::Union{typeof(min),typeof(max)})
-#     return TropicalHypersurface{M}(f)
-# end
 
 ################################################################################
 #
@@ -276,4 +226,33 @@ Return the minimal polynomial with smallest possible coefficients of a hypersurf
 function minpoly(T::TropicalHypersurface)
     error("function not implemented yet")
     return
+end
+
+
+###
+# Conversion to TropicalVariety
+###
+@doc raw"""
+    tropical_variety(Tf::TropicalHypersurface)
+
+Converts a `TropicalHypersurface` to a `TropicalVariety`.
+
+# Examples
+```jldoctest
+julia> T = TropicalSemiring(min);
+
+julia> Txy,(x,y) = T["x","y"];
+
+julia> f = x+y+1;
+
+julia> TH = tropical_hypersurface(f);
+
+julia> TV = tropical_variety(TH)
+min tropical variety of dimension 1 embedded in 2-dimensional Euclidean space
+```
+"""
+function tropical_variety(Tf::TropicalHypersurface)
+    TV = TropicalVariety{convention(Tf),is_embedded(Tf)}(Tf.polyhedralComplex)
+    set_attribute!(TV,:weights,weights(Tf))
+    return TV
 end

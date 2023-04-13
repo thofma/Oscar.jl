@@ -1284,6 +1284,7 @@ export trivial_divisor_class
 export trivial_morphism
 export trivial_subgroup, has_trivial_subgroup, set_trivial_subgroup
 export tropical_link
+export tropical_hypersurface
 export tropical_points
 export tropical_polynomial
 export tropical_variety
