@@ -16,6 +16,34 @@
 
 abstract type TropicalVarietySupertype{M,EMB} end
 
+
+@doc raw"""
+    convention(TV)
+
+Returns `min` or `max` depending on what is the convention of `TV`.
+
+#Examples
+```jldoctest
+julia> RR = TropicalSemiring(min)
+Tropical semiring (min)
+
+julia> S,(x,y) = RR["x","y"];
+
+julia> f = x^2+y^2+2
+x^2 + y^2 + (2)
+
+julia> hyp1 = TropicalHypersurface(f)
+min tropical hypersurface embedded in 2-dimensional Euclidean space
+
+julia> convention(hyp1)
+min (generic function with 12 methods)
+```
+"""
+function convention(Tf::TropicalVarietySupertype{M,EMB}) where {M,EMB}
+    return M
+end
+
+
 @doc raw"""
     polyhedral_complex(TV)
 
