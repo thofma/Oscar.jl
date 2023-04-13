@@ -53,38 +53,6 @@ end
 # ---------------------
 ###
 
-@doc raw"""
-    TropicalVariety()
-
-Construct the embedded tropical variety of a polynomial ideal over a (possibly trivially) valued field
-
-# Examples
-"""
-# todo: Dartmouth
-# function TropicalVariety()
-#
-#     return #...
-# end
-
-
-
-@doc raw"""
-    TropicalVariety{M,EMB}(Sigma::PolyhedralComplex)
-
-Construct the abstract tropical variety from a polyhedral complex
-
-# Examples
-```jldoctest
-julia> IM = IncidenceMatrix([[1,2],[1,3],[1,4]]);
-
-julia> VR = [0 0; 1 0; 0 1; -1 -1];
-
-julia> far_vertices = [2,3,4];
-
-julia> Sigma = PolyhedralComplex(IM, VR, far_vertices);
-
-julia> tropicalLine = TropicalVariety{min,true}(Sigma)
-"""
 
 
 ###
@@ -340,8 +308,8 @@ function tropical_variety(I::MPolyIdeal, val::TropicalSemiringMap, convention::U
 
   verts_rays_perm  = collect(vertices_and_rays(PC))
   verts_rays_perm = Vector{Int64}.(verts_rays_perm)
-  permutation = [findfirst(isequal(l), verts_rays_perm) for l in verts_rays]    
-#  inc = [findall(c -> c, incidence_matrix[i, :]) for i in 1:size(incidence_matrix, 1)]                                                       
+  permutation = [findfirst(isequal(l), verts_rays_perm) for l in verts_rays]
+#  inc = [findall(c -> c, incidence_matrix[i, :]) for i in 1:size(incidence_matrix, 1)]
   new_incidence = [permutation[incidence] for incidence in incidence_matrix]
   mults = Dict(new_incidence[i] => multiplicities[i] for i in 1:length(working_list_done))
 
