@@ -53,6 +53,10 @@ end
 #
 ################################################################################
 
+function toVectorVector(M::fmpq_mat)
+    return [ [M[i,j] for j in 1:ncols(M)] for i in 1:nrows(M) ]
+end
+
 @doc raw"""
     tropical_hypersurface(f::AbstractAlgebra.Generic.MPoly{Oscar.TropicalSemiringElem{T}})
 
@@ -78,15 +82,37 @@ function tropical_hypersurface(f::AbstractAlgebra.Generic.MPoly{Oscar.TropicalSe
         error("Tropical hypersurfaces of constant polynomials not supported.")
     end
     M = convention(base_ring(f))
+
+    ###
+    # Create a hypersurface in polymake
+    ###
     fstr = Tuple(tropical_polynomial_to_polymake(f))
     pmpoly = Polymake.common.totropicalpolynomial(fstr...)
     pmhypproj = Polymake.tropical.Hypersurface{M}(POLYNOMIAL=pmpoly)
     pmhyp = Polymake.tropical.affine_chart(pmhypproj)
+
+    ###
+    # Construct a TropicalHypersurface containing the polyhedral complex
+    ###
     Vf = TropicalHypersurface{M, true}(PolyhedralComplex(pmhyp))
-    w = Vector{fmpz}(pmhypproj.WEIGHTS)
+
+    ###
+    # Construct the weight dictionary
+    ###
+    weights = Vector{fmpz}(pmhypproj.WEIGHTS)
+    incidenceMatrix = toVectorVector(matrix(QQ,pmhypproj.MAXIMAL_POLYTOPES))
+    raysAndVertices = toVectorVector(matrix(QQ,pmhypproj.VERTICES)[1:end,3:end])
+    uniquePoints = Vector{fmpz}[]
+    for I in incidenceMatrix
+        pt = sum([raysAndVertices[i] for i in 1:length(I) if I[i]==1])
+        pt = numerator.(pt .*lcm([denominator(pi) for pi in pt]))
+        push!(uniquePoints,pt)
+    end
+    weightsDict = Dict(zip(uniquePoints,weights))
+
     set_attribute!(Vf,:polymake_bigobject,pmhypproj)
     set_attribute!(Vf,:tropical_polynomial,f)
-    set_attribute!(Vf,:weights,w)
+    set_attribute!(Vf,:weights,weightsDict)
     return Vf
 end
 
@@ -117,10 +143,8 @@ max tropical hypersurface embedded in 2-dimensional Euclidean space
 function tropical_hypersurface(f::MPolyRingElem,M::Union{typeof(min),typeof(max)}=min)
     tropf = tropical_polynomial(f,M)
     Tf = tropical_hypersurface(tropf)
-    w = Vector{fmpz}(pm_object(Tf).WEIGHTS)
+    # polymake_bigobject, tropical_polynomial, weights already set
     set_attribute!(Tf,:algebraic_polynomial,f)
-    set_attribute!(Tf,:tropical_polynomial,tropf)
-    set_attribute!(Tf,:weights,w)
     return Tf
 end
 
@@ -147,10 +171,8 @@ min tropical hypersurface embedded in 2-dimensional Euclidean space
 function tropical_hypersurface(f::MPolyRingElem, val::TropicalSemiringMap)
     tropf = tropical_polynomial(f,val)
     Tf = tropical_hypersurface(tropf)
-    w = Vector{fmpz}(pm_object(Tf).WEIGHTS)
+    # polymake_bigobject, tropical_polynomial, weights already set
     set_attribute!(Tf,:algebraic_polynomial,f)
-    set_attribute!(Tf,:tropical_polynomial,tropf)
-    set_attribute!(Tf,:weights,w)
     return Tf
 end
 
