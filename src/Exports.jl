@@ -1045,6 +1045,7 @@ export polarize
 export poly_type
 export polyhedra
 export polyhedra_of_dim
+export polyhedral_complex
 export polyhedral_fan_from_rays_action
 export polyhedron
 export polynomial
@@ -1291,7 +1292,6 @@ export tutte_polynomial
 export two_sided_ideal
 export underlying_glueing
 export underlying_morphism
-export underlying_polyhedral_complex
 export underlying_quotient
 export underlying_scheme
 export uniform_matroid
