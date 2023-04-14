@@ -75,6 +75,7 @@ const pm = Polymake
             end
         end
         @test facets(Halfspace, Cone1) isa SubObjectIterator{LinearHalfspace{T}}
+        @test facets(IncidenceMatrix, Cone1) isa IncidenceMatrix
         @test facets(Cone1) isa SubObjectIterator{LinearHalfspace{T}}
         @test linear_span(Cone4) isa SubObjectIterator{LinearHyperplane{T}}
         @test length(linear_span(Cone4)) == 1
@@ -112,6 +113,7 @@ const pm = Polymake
         @test codim(Cone4) == 1
         @test codim(Cone3) == 0
         @test faces(Cone2, 2) isa SubObjectIterator{Cone{T}}
+        @test faces(IncidenceMatrix, Cone2, 2) isa IncidenceMatrix
         @test length(faces(Cone2, 2)) == 2
         @test faces(Cone4, 1) isa SubObjectIterator{Cone{T}}
         @test length(faces(Cone4, 1)) == 2

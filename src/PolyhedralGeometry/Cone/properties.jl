@@ -140,11 +140,17 @@ RayVector{QQFieldElem}[[1, 0, 0], [0, 0, 1]]
 RayVector{QQFieldElem}[[1, 0, 0], [0, 1, 0]]
 ```
 """
-function faces(C::Cone{T}, face_dim::Int) where T<:scalar_types
+function faces(::Type{Cone{T}}, C::Cone{T}, face_dim::Int) where T<:scalar_types
    face_dim == dim(C) - 1 && return SubObjectIterator{Cone{T}}(pm_object(C), _face_cone_facet, nfacets(C))
    n = face_dim - length(lineality_space(C))
    n < 1 && return nothing
    return SubObjectIterator{Cone{T}}(C.pm_cone, _face_cone, size(Polymake.polytope.faces_of_dim(pm_object(C), n), 1), (f_dim = n,))
+end
+faces(C::Cone{T}, face_dim::Int) where T<:scalar_types = faces(Cone{T}, C, face_dim)
+function faces(::Type{IncidenceMatrix}, C::Cone, face_dim::Int)
+  result = Polymake.polytope.faces_of_dim(pm_object(C), face_dim)
+  result = Polymake.to_one_based_indexing(result)
+  return IncidenceMatrix([Vector{Int}(x) for x in result])
 end
 
 function _face_cone(::Type{Cone{T}}, C::Polymake.BigObject, i::Base.Integer; f_dim::Int = 0) where T<:scalar_types
@@ -452,6 +458,8 @@ _ray_indices(::Val{_facet_cone}, C::Polymake.BigObject) = C.RAYS_IN_FACETS
 facets(C::Cone{T}) where T<:scalar_types = facets(LinearHalfspace{T}, C)
 
 facets(::Type{Halfspace}, C::Cone{T}) where T<:scalar_types = facets(LinearHalfspace{T}, C)
+
+facets(::Type{IncidenceMatrix}, C::Cone) = IncidenceMatrix(pm_object(C).RAYS_IN_FACETS)
 
 @doc raw"""
     lineality_space(C::Cone)
