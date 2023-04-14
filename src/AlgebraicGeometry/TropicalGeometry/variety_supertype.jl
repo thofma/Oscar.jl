@@ -522,6 +522,41 @@ function is_simplicial(T::TropicalVarietySupertype{M,EMB}) where {M,EMB}
 end
 
 
+@doc raw"""
+    rays(T::TropicalVariety{M, EMB})
+    rays(T::TropicalCurve{M, EMB})
+    rays(T::TropicalHypersurface{M, EMB})
+    rays(T::TropicalLinearSpace{M, EMB})
+
+Return the vertices of `T`, which are points in euclidean space if T is embedded or elements in an ordered set otherwise.
+
+# Examples
+The vertices of a plane tropical line, plane tropical honeycomb quadric, and plane tropical honeycomb cubic
+```jldoctest
+julia> RR = TropicalSemiring(min);
+
+julia> S,(x,y) = RR["x","y"];
+
+julia> f1 = x+y+1;
+
+julia> tropicalLine = tropical_hypersurface(f1);
+
+julia> rays(tropicalLine)
+3-element SubObjectIterator{RayVector{QQFieldElem}}:
+ [-1, -1]
+ [1, 0]
+ [0, 1]
+```
+"""
+function rays(as::Type{PointVector{S}}, T::TropicalVarietySupertype{M,EMB}) where {S,M,EMB}
+    return rays(as,T.polyhedralComplex)
+end
+
+function rays(T::TropicalVarietySupertype{M, EMB}) where {M,EMB}
+    return rays(T.polyhedralComplex)
+end
+
+
 
 @doc raw"""
     vertices(T::TropicalVariety{M, EMB})
