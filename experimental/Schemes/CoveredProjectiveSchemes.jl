@@ -589,9 +589,6 @@ function _compute_projective_glueing(gd::CoveredProjectiveGlueingData)
   UV, VU = glueing_domains(G)
   f, g = glueing_morphisms(G)
 
-  PUV, PUVtoP = fiber_product(OX(U, UV), P)
-  QVU, QVUtoQ = fiber_product(OX(V, VU), Q)
-
   # to construct the identifications of PUV with QVU we need to 
   # express the generators of I(U) in terms of the generators of I(V)
   # on the overlap U ∩ V. 
