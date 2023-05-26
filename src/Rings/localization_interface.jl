@@ -611,7 +611,7 @@ function (f::AbsLocalizedRingHom)(a::AbsLocalizedRingElem)
 end
 
 ### generic functions
-(f::AbsLocalizedRingHom)(a::RingElem) = f(domain(f)(a))
+(f::AbsLocalizedRingHom)(a::RingElem; check::Bool=true) = f(domain(f)(a, check=check))
 (f::AbsLocalizedRingHom)(a::Integer) = f(domain(f)(a))
 (f::AbsLocalizedRingHom)(a::ZZRingElem) = f(domain(f)(a))
 

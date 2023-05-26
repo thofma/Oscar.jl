@@ -901,7 +901,7 @@ lift(a::MPolyQuoRingElem) = a.f
 
 (Q::MPolyQuoRing)() = MPolyQuoRingElem(base_ring(Q)(), Q)
 
-function (Q::MPolyQuoRing)(a::MPolyQuoRingElem)
+function (Q::MPolyQuoRing)(a::MPolyQuoRingElem; check::Bool=true)
   if parent(a) === Q
     return a
   else

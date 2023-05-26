@@ -1259,8 +1259,10 @@ mutable struct MPolyLocRingElem{
     base_ring(parent(f)) == base_ring(W) || error(
 	"the numerator and denominator of the given fraction do not belong to the original ring before localization"
       )
-    if check && !iszero(f) && !is_unit(denominator(f))
-      denominator(f) in inverted_set(W) || error("the given denominator is not admissible for this localization")
+    @check begin
+      if !iszero(f) && !is_unit(denominator(f))
+        denominator(f) in inverted_set(W) || error("the given denominator is not admissible for this localization")
+      end
     end
     return new{BaseRingType, BaseRingElemType, RingType, RingElemType, MultSetType}(W, f)
   end
@@ -1859,9 +1861,7 @@ function extend_pre_saturated_ideal!(
   L = base_ring(I)
   R = base_ring(L)
   J = pre_saturated_ideal(I)
-  if check
-    u*f == dot(x, gens(J)) || error("input is not coherent")
-  end
+  @check u*f == dot(x, gens(J)) "input is not coherent"
   J_ext = ideal(R, vcat(gens(J), [f]))
   T = pre_saturation_data(I)
   y = mul(T, transpose(L(one(u), u, check=false)*change_base_ring(L, x)))
@@ -1884,7 +1884,7 @@ function extend_pre_saturated_ideal!(
   J = pre_saturated_ideal(I)
   n = length(f)
   n == length(u) == nrows(x) || error("input dimensions are not compatible")
-  if check
+  @check begin
     for i in 1:n
       u[i]*f[i] == dot(x[i, :], gens(J)) || error("input is not coherent")
     end
@@ -2627,7 +2627,6 @@ mutable struct MPolyLocalizedRingHom{
       for f in U
         is_unit(S(res(f))) || error("image of $f is not a unit in the codomain")
       end
-      true
     end
     return new{DomainType, CodomainType, RestrictedMapType}(W, S, res) 
   end
