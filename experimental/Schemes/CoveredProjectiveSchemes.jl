@@ -136,10 +136,6 @@ mutable struct ProjectiveGlueing{
     ) where {GlueingType<:AbsGlueing, IncType1<:ProjectiveSchemeMor,IncType2<:ProjectiveSchemeMor, IsoType1<:ProjectiveSchemeMor, IsoType2<:ProjectiveSchemeMor}
     (X, Y) = patches(G)
     (U, V) = glueing_domains(G)
-    @vprint :Glueing 1 "computing glueing of \n"
-    @vprint :Glueing 1 "$(X)\n"
-    @vprint :Glueing 1 "and\n"
-    @vprint :Glueing 1 "$(Y) \n"
     (fb, gb) = glueing_morphisms(G)
     (PX, QY) = (codomain(incP), codomain(incQ))
     (PU, QV) = (domain(incP), domain(incQ))
@@ -162,8 +158,7 @@ mutable struct ProjectiveGlueing{
       # idQV = compose(g, f)
       # all(t->(pullback(idQV)(t) == t), gens(SQV)) || error("composition of maps is not the identity")
     end
-    @vprint :Glueing 1 "done\n"
-    return new{GlueingType, IsoType1, IncType1, IsoType2, IncType2}(G, incP, incQ, f, g)
+    return new{GlueingType, IsoType, IncType}(G, incP, incQ, f, g)
   end
 end
 
@@ -781,6 +776,7 @@ function _compute_glueing(gd::ProjectiveGlueingData)
 
   xh = homogenization_map(UD, AW).(OO(AW).(x))
   yh = homogenization_map(VD, BW).(OO(BW).(y))
+
   xhh = [(pullback(gup)(pp), pullback(gup)(qq)) for (pp, qq) in xh]
   yhh = [(pullback(fup)(pp), pullback(fup)(qq)) for (pp, qq) in yh]
 

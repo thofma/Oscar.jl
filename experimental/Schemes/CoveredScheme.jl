@@ -540,8 +540,8 @@ function CoveredClosedEmbedding(X::AbsCoveredScheme, I::IdealSheaf;
     end
   end
 
-  Z = isempty(patch_list) ? CoveredScheme(base_ring(X)) : CoveredScheme(Covering(patch_list, glueing_dict, check=check))
-  cov_inc = CoveringMorphism(default_covering(Z), covering, mor_dict, check=check)
-  return CoveredClosedEmbedding(Z, X, cov_inc, ideal_sheaf=I, check=check)
+  Z = isempty(patch_list) ? CoveredScheme(base_ring(X)) : CoveredScheme(Covering(patch_list, glueing_dict, check=false))
+  cov_inc = CoveringMorphism(default_covering(Z), covering, mor_dict, check=false)
+  return CoveredClosedEmbedding(Z, X, cov_inc, ideal_sheaf=I, check=false)
 end
 
