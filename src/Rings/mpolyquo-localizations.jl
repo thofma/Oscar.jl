@@ -1676,7 +1676,7 @@ function coordinates(a::RingElem, I::MPolyQuoLocalizedIdeal)
   L = base_ring(I)
   parent(a) == L || return coordinates(L(a), I)
   a in I || error("the given element is not in the ideal")
-  x = coordinates(lift(a), pre_image_ideal(I))
+  x = coordinates(lift(a), pre_image_ideal(I), check=false)
   return map_entries(L, x[1, 1:ngens(I)])
 end
 
