@@ -29,9 +29,10 @@ end
 elliptic_surface(generic_fiber::EllCrv, s::Int) = EllipticSurface(generic_fiber, s)
 
 function elliptic_surface(generic_fiber::EllCrv, s::Int, mwl_gens::Vector{<:EllCrvPt})
-  @req all(parent(i)==S.E for i in mwl_gens) "not a vector of points on $(generic_fiber)"
+  @req all(parent(i)==generic_fiber.E for i in mwl_gens) "not a vector of points on $(generic_fiber)"
   S = elliptic_surface(generic_fiber, s)
   S.MWL = mwl_gens
+  return S
 end
 
 function underlying_scheme(S::EllipticSurface)
@@ -69,7 +70,7 @@ function algebraic_lattice(S::EllipticSurface, mwl_gens::Vector{<:EllCrvPt})
     end
   end
   @assert rank(GA) == n "todo: treat torsion sections" # need to adapt mordell_weil then too
-  return gensA, integer_lattice(GA)
+  return gensA, integer_lattice(gram=GA)
 end
 
 @attr ZZLat function mordell_weil_lattice(S::EllipticSurface)
@@ -276,7 +277,7 @@ function relatively_minimal_model(E::EllipticSurface)
   inc_Y0 = inc_S
 
   exceptionals = []
-  varnames = [:a,:b,:c,:d,:e,:f,:g,:h,:i,:j,:k,:l]
+  varnames = [:a,:b,:c,:d,:e,:f,:g,:h,:i,:j,:k,:l,:m,:n,:o,:p,:q,:r,:u,:v,:w]
   projectionsX = []
   projectionsY = []
   count = 0
@@ -302,7 +303,7 @@ function relatively_minimal_model(E::EllipticSurface)
     else
       cov = simplified_covering(X0)
     end
-    pr_X1 = blow_up(I_sing_X0_1, covering=cov, var_name=varnames[mod(count, length(varnames))])
+    pr_X1 = blow_up(I_sing_X0_1, covering=cov, var_name=varnames[1+mod(count, length(varnames))])
     X1 = domain(pr_X1)
     @vprint :ellipticK3 1 "$(X1)\n"
     E1 = exceptional_divisor(pr_X1)
