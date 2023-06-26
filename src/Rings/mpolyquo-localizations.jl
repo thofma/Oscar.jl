@@ -610,7 +610,7 @@ function inv(L::MPolyQuoLocRing{BRT, BRET, RT, RET, MPolyPowersOfElement{BRT, BR
   W = localized_ring(L)
   R = base_ring(L)
   I = saturated_ideal(modulus(L))
-  d = prod(denominators(inverted_set(W)))
+  d = prod(denominators(inverted_set(W)); init=one(R))
   powers_of_d = [d]
   ### apply logarithmic bisection to find a power dᵏ ≡  c ⋅ f mod I
   (result, coefficient) = divides(one(Q), f)
@@ -659,7 +659,7 @@ function convert(
   R = base_ring(L)
   I = saturated_ideal(modulus(L))
   one(R) in I && return zero(L)
-  d = prod(denominators(inverted_set(W)))
+  d = prod(denominators(inverted_set(W)); init=one(R))
   powers_of_d = [d]
   ### apply logarithmic bisection to find a power a ⋅dᵏ ≡  c ⋅ b mod I
   (result, coefficient) = divides(Q(a), Q(b))
@@ -1219,7 +1219,7 @@ function as_affine_algebra(
   R = base_ring(L)
   A, phi, t = _add_variables_first(R, [Symbol(inverse_name)])
   theta = t[1]
-  f = prod(denominators(inverted_set(L)))
+  f = prod(denominators(inverted_set(L)); init=one(R))
   I = ideal(A, [phi(g) for g in gens(modulus(underlying_quotient(L)))]) + ideal(A, [one(A)-theta*phi(f)])
   return A, I, f, phi, theta
 end
@@ -1234,7 +1234,7 @@ function _as_affine_algebra(
   R = base_ring(L)
   A, phi, t = _add_variables_first(R, [Symbol(inverse_name)])
   theta = t[1]
-  f = prod(denominators(inverted_set(L)))
+  f = prod(denominators(inverted_set(L)); init=one(R))
   I = ideal(A, [phi(g) for g in gens(modulus(underlying_quotient(L)))]) + ideal(A, [one(A)-theta*phi(f)])
   Q, _ = quo(A, I)
   id = hom(L, Q, gens(A)[2:end], check=false)
@@ -1311,7 +1311,7 @@ function is_isomorphism(
     gen(G, 1)==one(B) || error("the denominator is not a unit in the target ring")
     push!(denoms, inc2(q)*last(collect(M)))
   end
-  pushfirst!(imagesB, prod(denoms))
+  pushfirst!(imagesB, prod(denoms; init=one(B)))
 
   # perform a sanity check
   phiAB = hom(A, B, imagesB, check=false)
