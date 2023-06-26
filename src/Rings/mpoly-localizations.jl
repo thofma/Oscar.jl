@@ -1718,9 +1718,7 @@ end
 function coordinates(a::RingElem, I::MPolyLocalizedIdeal; check::Bool=true)
   L = base_ring(I)
   parent(a) === L || return coordinates(L(a), I, check=check)
-  if check 
-    a in I || error("the given element is not in the ideal")
-  end
+  @check a in I "the given element is not in the ideal"
   J = pre_saturated_ideal(I)
   R = base_ring(J)
   p = numerator(a)
@@ -1746,11 +1744,8 @@ function coordinates(
   ) where {LRT<:MPolyLocRing{<:Any, <:Any, <:Any, <:Any, <:MPolyPowersOfElement}}
   L = base_ring(I)
   parent(a) === L || return coordinates(L(a), I, check=check)
-  if check 
-    a in I || error("the given element is not in the ideal")
-  end
-  saturated_ideal(I, with_generator_transition=true) # Computing the saturation first is cheaper than the generic Posur method
-  # Note that a call to saturated_ideal overwrites the cache for pre_saturated_ideal
+  @check a in I "the given element is not in the ideal"
+  !is_saturated(I) && _replace_pre_saturated_ideal(I, saturated_ideal(I), prod(denominators(inverted_set(L)); init=one(base_ring(L)))) # Computing the saturation first is cheaper than the generic Posur method
   J = pre_saturated_ideal(I)
   R = base_ring(J)
   p = numerator(a)
@@ -2005,48 +2000,9 @@ function saturated_ideal(
       for d in denominators(inverted_set(L))
         if !is_unit(d) && !iszero(Jsat)
           Jsat = saturation(Jsat, ideal(R, d))
-        end
-        if with_generator_transition
-          # We completely overwrite the pre_saturated_ideal with the generators 
-          # of the saturated ideal
-          cache = Vector()
-          for g in gens(Jsat)
-            (k, dttk) = Oscar._minimal_power_such_that(d, p->(p*g in pre_saturated_ideal(I)))
-            if k > 0
-              push!(cache, (g, coordinates(dttk*g, pre_saturated_ideal(I)), dttk))
-            else
-              # We hit the unit ideal. Now we could simply return that; but we don't for 
-              # the moment.
-              push!(cache, (g, coordinates(dttk*g, pre_saturated_ideal(I)), dttk))
-            end
+          if with_generator_transition
+            _replace_pre_saturated_ideal(I, Jsat, d)
           end
-          if length(cache) > 0
-            #A = zero_matrix(L, ngens(Jsat), ngens(I))
-
-            #for i in 1:length(cache)
-            #  (g, a, dttk) = cache[i]
-            #  A[i, :] = L(one(dttk), dttk, check=false)*change_base_ring(L, a)*pre_saturation_data(I)
-            #end
-            cols = Vector()
-            for i in 1:length(cache)
-              (g, a, dttk) = cache[i]
-              push!(cols, mul(pre_saturation_data(I), transpose(L(one(dttk), dttk, check=false)*change_base_ring(L, a))))
-            end
-            A = zero_matrix(SMat, L, 0, length(cache))
-            for i in 1:ngens(I)
-              v = sparse_row(L, [(j, cols[j][i, 1]) for j in 1:length(cols)])
-              push!(A, v)
-            end
-            I.pre_saturated_ideal = ideal(R, gens(Jsat))
-            I.pre_saturation_data = A
-#            extend_pre_saturated_ideal!(I, 
-#                                        elem_type(R)[g for (g, x, u) in cache],
-#                                        vcat(dense_matrix_type(R)[x for (g, x, u) in cache]),
-#                                        [u for (g, x, u) in cache], 
-#                                        check=false
-#                                       )
-          end
-          I.is_saturated=true
         end
       end
       I.saturated_ideal = Jsat
@@ -2055,42 +2011,9 @@ function saturated_ideal(
       Jsat = pre_saturated_ideal(I)
       if !is_unit(d) && !iszero(pre_saturated_ideal(I))
         Jsat = saturation(Jsat, ideal(R, d))
-      end
-      if with_generator_transition
-        cache = Vector()
-        for g in gens(Jsat)
-          (k, dttk) = Oscar._minimal_power_such_that(d, p->(p*g in pre_saturated_ideal(I)))
-          #if k > 0
-            push!(cache, (g, coordinates(dttk*g, pre_saturated_ideal(I)), dttk))
-          #end
+        if with_generator_transition
+          _replace_pre_saturated_ideal(I, Jsat, d)
         end
-        if length(cache) > 0
-          # We completely overwrite the pre_saturated_ideal with the generators 
-          # of the saturated ideal
-          #A = zero_matrix(L, ngens(Jsat), ngens(I))
-          #for i in 1:length(cache)
-          #  (g, a, dttk) = cache[i]
-          #  A[i, :] = L(one(dttk), dttk, check=false)*change_base_ring(L, a)*pre_saturation_data(I)
-          #end
-          cols = Vector()
-          for i in 1:length(cache)
-            (g, a, dttk) = cache[i]
-            push!(cols, mul(pre_saturation_data(I), transpose(L(one(dttk), dttk, check=false)*change_base_ring(L, a))))
-          end
-          A = zero_matrix(SMat, L, 0, length(cache))
-          for i in 1:ngens(I)
-            push!(A, sparse_row(L, [(j, cols[j][i, 1]) for j in 1:length(cols)]))
-          end
-          I.pre_saturated_ideal = Jsat
-          I.pre_saturation_data = A
-         #extend_pre_saturated_ideal!(I, 
-         #                            elem_type(R)[g for (g, x, u) in cache],
-         #                            vcat(dense_matrix_type(R)[x for (g, x, u) in cache]),
-         #                            [u for (g, x, u) in cache], 
-         #                            check=false
-         #                           )
-        end
-        I.is_saturated=true
       end
       I.saturated_ideal = Jsat
     else
@@ -2098,6 +2021,63 @@ function saturated_ideal(
     end
   end
   return I.saturated_ideal
+end
+
+@doc raw"""
+    _replace_pre_saturated_ideal(
+        I::MPolyLocalizedIdeal{LRT}, J::MPolyIdeal, d::MPolyRingElem
+      ) where {LRT<:MPolyLocRing{<:Any, <:Any, <:Any, <:Any, <:MPolyPowersOfElement}}
+
+For ``I ⊂ R[S⁻¹]`` with `saturated_ideal` ``J ⊂ R`` this replaces the 
+`pre_saturated_ideal` of ``I`` by ``J`` and computes the transition data for all
+the generators using only powers of `d` as denominators.
+
+"""
+function _replace_pre_saturated_ideal(
+    I::MPolyLocalizedIdeal{LRT}, Jsat::MPolyIdeal, d::MPolyRingElem
+  ) where {LRT<:MPolyLocRing{<:Any, <:Any, <:Any, <:Any, <:MPolyPowersOfElement}}
+  L = base_ring(I)
+  R = base_ring(L)
+  # We completely overwrite the pre_saturated_ideal with the generators 
+  # of the saturated ideal
+  cache = Vector()
+  for g in gens(Jsat)
+    (k, dttk) = Oscar._minimal_power_such_that(d, p->(p*g in pre_saturated_ideal(I)))
+    if k > 0
+      push!(cache, (g, coordinates(dttk*g, pre_saturated_ideal(I)), dttk))
+    else
+      # We hit the unit ideal. Now we could simply return that; but we don't for 
+      # the moment.
+      push!(cache, (g, coordinates(dttk*g, pre_saturated_ideal(I)), dttk))
+    end
+  end
+  if length(cache) > 0
+    #A = zero_matrix(L, ngens(Jsat), ngens(I))
+
+    #for i in 1:length(cache)
+    #  (g, a, dttk) = cache[i]
+    #  A[i, :] = L(one(dttk), dttk, check=false)*change_base_ring(L, a)*pre_saturation_data(I)
+    #end
+    cols = Vector()
+    for i in 1:length(cache)
+      (g, a, dttk) = cache[i]
+      push!(cols, mul(pre_saturation_data(I), transpose(L(one(dttk), dttk, check=false)*change_base_ring(L, a))))
+    end
+    A = zero_matrix(SMat, L, 0, length(cache))
+    for i in 1:ngens(I)
+      v = sparse_row(L, [(j, cols[j][i, 1]) for j in 1:length(cols)])
+      push!(A, v)
+    end
+    I.pre_saturated_ideal = ideal(R, gens(Jsat))
+    I.pre_saturation_data = A
+    #            extend_pre_saturated_ideal!(I, 
+    #                                        elem_type(R)[g for (g, x, u) in cache],
+    #                                        vcat(dense_matrix_type(R)[x for (g, x, u) in cache]),
+    #                                        [u for (g, x, u) in cache], 
+    #                                        check=false
+    #                                       )
+  end
+  I.is_saturated=true
 end
 
 @doc raw"""
