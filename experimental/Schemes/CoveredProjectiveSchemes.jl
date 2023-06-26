@@ -589,6 +589,8 @@ function _compute_projective_glueing(gd::CoveredProjectiveGlueingData)
   # on the overlap U ∩ V. 
   !(G isa Glueing) || error("method not implemented for this type of glueing")
 
+  QVU, QVUtoQ = fiber_product(OX(V, VU), Q)
+  PUV, PUVtoP = fiber_product(OX(U, UV), P)
   # The problem is that on a SpecOpen U ∩ V
   # despite I(U)|U ∩ V == I(V)|U ∩ V, we 
   # have no method to find coefficients aᵢⱼ such that fᵢ = ∑ⱼaᵢⱼ⋅gⱼ
