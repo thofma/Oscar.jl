@@ -909,18 +909,18 @@ function (Q::MPolyQuoRing)(a::MPolyQuoRingElem; check::Bool=true)
   end
 end
 
-function(Q::MPolyRing{T})(a::MPolyQuoRingElem{<:MPolyRingElem{T}}) where {T}
+function(Q::MPolyRing{T})(a::MPolyQuoRingElem{<:MPolyRingElem{T}}; check::Bool=false) where {T}
   @req base_ring(parent(a)) === Q "parent missmatch"
   return lift(a)
 end
 
 
-function (Q::MPolyQuoRing{S})(a::S) where {S <: MPolyRingElem}
+function (Q::MPolyQuoRing{S})(a::S; check::Bool=false) where {S <: MPolyRingElem}
   @req base_ring(Q) === parent(a) "parent mismatch"
   return MPolyQuoRingElem(a, Q)
 end
 
-function (Q::MPolyQuoRing)(a::MPolyRingElem)
+function (Q::MPolyQuoRing)(a::MPolyRingElem; check::Bool=false)
   return Q(base_ring(Q)(a))
 end
 
@@ -935,7 +935,7 @@ function (S::Singular.PolyRing)(a::MPolyQuoRingElem)
   return S(a.f)
 end
 
-(Q::MPolyQuoRing)(a) = MPolyQuoRingElem(base_ring(Q)(a), Q)
+(Q::MPolyQuoRing)(a; check::Bool=false) = MPolyQuoRingElem(base_ring(Q)(a), Q)
 
 one(Q::MPolyQuoRing) = Q(1)
 

@@ -607,7 +607,7 @@ Applies the map `f` to the element `a` in the domain of `f`.
 """
 function (f::AbsLocalizedRingHom)(a::AbsLocalizedRingElem)
   parent(a) === domain(f) || return f(domain(f)(a))
-  return codomain(f)(restricted_map(f)(numerator(a)), check=false)*inv(codomain(f)(restricted_map(f)(denominator(a)), check=false))
+  return codomain(f)(restricted_map(f)(numerator(a)))*inv(codomain(f)(restricted_map(f)(denominator(a))))
 end
 
 ### generic functions

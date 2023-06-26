@@ -143,7 +143,7 @@ mutable struct ProjectiveGlueing{
     domain(f) == codomain(g) == PU && domain(g) == codomain(f) == QV || error("maps are not compatible")
     SPU = homogeneous_coordinate_ring(domain(f))
     SQV = homogeneous_coordinate_ring(codomain(f))
-    if check
+    @check begin
       # check the commutativity of the pullbacks
       all(y->(pullback(f)(SQV(OO(V)(y))) == SPU(pullback(fb)(OO(V)(y)))), gens(base_ring(OO(Y)))) || error("maps do not commute")
       all(x->(pullback(g)(SPU(OO(U)(x))) == SQV(pullback(gb)(OO(U)(x)))), gens(base_ring(OO(X)))) || error("maps do not commute")
@@ -158,7 +158,7 @@ mutable struct ProjectiveGlueing{
       # idQV = compose(g, f)
       # all(t->(pullback(idQV)(t) == t), gens(SQV)) || error("composition of maps is not the identity")
     end
-    return new{GlueingType, IsoType, IncType}(G, incP, incQ, f, g)
+    return new{GlueingType, IsoType1, IncType1, IsoType2, IncType2}(G, incP, incQ, f, g)
   end
 end
 
