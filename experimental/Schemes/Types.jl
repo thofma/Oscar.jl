@@ -245,7 +245,7 @@ identifications given by the glueings in the `default_covering`.
         function rho_func(x::RingElem)
           parent(x) === OV || error("element does not belong to the correct domain")
           y = pbg(domain(pbg)(x, check=false))
-          yy = OO(U_flat)(lifted_numerator(y)//lifted_denominator(y))
+          yy = restrict(y, U_flat, check=false)
           return pullback(incU)(yy)
         end
         return hom(OV, OU, rho_func.(gens(OV)), check=false)
