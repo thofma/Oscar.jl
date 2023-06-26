@@ -316,6 +316,7 @@ function hypersurface_complement(X::SpecType, f::RingElem) where {SpecType<:AbsS
   parent(f) == OO(X) || return hypersurface_complement(X, OO(X)(f))
   h = lifted_numerator(f)
   U = MPolyPowersOfElement(h)
+  simplify!(U)
   W, _ = Localization(OO(X), U)
   Y = Spec(W)
   set_attribute!(Y, :ambient_space, ambient_space(X))
@@ -326,6 +327,7 @@ function hypersurface_complement(X::SpecType, f::RingElem) where {SpecType<:AbsS
   parent(f) == OO(X) || return hypersurface_complement(X, OO(X)(f))
   h = numerator(f)
   U = MPolyPowersOfElement(h)
+  simplify!(U)
   W, _ = Localization(OO(X), U)
   Y = Spec(W)
   set_attribute!(Y, :ambient_space, ambient_space(X))
@@ -335,6 +337,7 @@ end
 function hypersurface_complement(X::SpecType, f::RingElem) where {SpecType<:AbsSpec{<:Any, <:MPolyRing}}
   parent(f) == OO(X) || return hypersurface_complement(X, OO(X)(f))
   U = MPolyPowersOfElement(f)
+  simplify!(U)
   W, _ = Localization(OO(X), U)
   Y = Spec(W)
   set_attribute!(Y, :ambient_space, ambient_space(X))
@@ -344,6 +347,7 @@ end
 function hypersurface_complement(X::SpecType, f::RingElem) where {SpecType<:AbsSpec{<:Any, <:MPolyQuoRing}}
   parent(f) == OO(X) || return hypersurface_complement(X, OO(X)(f))
   U = MPolyPowersOfElement(lift(f))
+  simplify!(U)
   W, _ = Localization(OO(X), U)
   Y = Spec(W)
   set_attribute!(Y, :ambient_space, ambient_space(X))
@@ -387,6 +391,7 @@ function hypersurface_complement(X::SpecType, f::Vector{<:RingElem}) where {Spec
   all(x->(parent(x) == OO(X)), f) || return hypersurface_complement(X, OO(X).(f))
   h = lifted_numerator.(f)
   U = MPolyPowersOfElement(ambient_coordinate_ring(X), h)
+  simplify!(U)
   W, _ = Localization(OO(X), U)
   Y = Spec(W)
   set_attribute!(Y, :ambient_space, ambient_space(X))
@@ -397,6 +402,7 @@ function hypersurface_complement(X::SpecType, f::Vector{<:RingElem}) where {Spec
   all(x->(parent(x) == OO(X)), f) || return hypersurface_complement(X, OO(X).(f))
   h = numerator.(f)
   U = MPolyPowersOfElement(ambient_coordinate_ring(X), h)
+  simplify!(U)
   W, _ = Localization(OO(X), U)
   Y = Spec(W)
   set_attribute!(Y, :ambient_space, ambient_space(X))
@@ -406,6 +412,7 @@ end
 function hypersurface_complement(X::SpecType, f::Vector{<:RingElem}) where {SpecType<:AbsSpec{<:Any, <:MPolyRing}}
   all(x->(parent(x) == OO(X)), f) || return hypersurface_complement(X, OO(X).(f))
   U = MPolyPowersOfElement(ambient_coordinate_ring(X), f)
+  simplify!(U)
   W, _ = Localization(OO(X), U)
   Y = Spec(W)
   set_attribute!(Y, :ambient_space, ambient_space(X))
@@ -415,6 +422,7 @@ end
 function hypersurface_complement(X::SpecType, f::Vector{<:RingElem}) where {SpecType<:AbsSpec{<:Any, <:MPolyQuoRing}}
   all(x->(parent(x) == OO(X)), f) || return hypersurface_complement(X, OO(X).(f))
   U = MPolyPowersOfElement(ambient_coordinate_ring(X), lift.(f))
+  simplify!(U)
   W, _ = Localization(OO(X), U)
   Y = Spec(W)
   set_attribute!(Y, :ambient_space, ambient_space(X))
