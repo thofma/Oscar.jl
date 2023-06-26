@@ -143,11 +143,22 @@ function simplify!(S::MPolyPowersOfElement)
   new_denom = Vector{elem_type(R)}()
   for d in denominators(S)
     for a in factor(d)
-      push!(new_denom, a[1])
+      !(a in new_denom) && push!(new_denom, a[1])
     end
   end
   S.a = new_denom
   return S
+end
+
+function simplify(S::MPolyPowersOfElement)
+  R = ambient_ring(S)
+  new_denom = Vector{elem_type(R)}()
+  for d in denominators(S)
+    for a in factor(d)
+      !(a in new_denom) && push!(new_denom, a[1])
+    end
+  end
+  return MPolyPowersOfElement(R, new_denom)
 end
 
 
@@ -1995,9 +2006,14 @@ function saturated_ideal(
     is_saturated(I) && return pre_saturated_ideal(I)
     L = base_ring(I)
     R = base_ring(L)
+    if iszero(I)
+      I.saturated_ideal = ideal(R, elem_type(R)[])
+      return I.saturated_ideal
+    end
     if strategy==:iterative_saturation
       Jsat = pre_saturated_ideal(I)
-      for d in denominators(inverted_set(L))
+      U = inverted_set(L)
+      for d in denominators(U)
         if !is_unit(d) && !iszero(Jsat)
           Jsat = saturation(Jsat, ideal(R, d))
           if with_generator_transition
@@ -2945,7 +2961,10 @@ function kernel(f::MPolyAnyMap{<:MPolyRing, <:MPolyLocRing})
   id =  _as_affine_algebra(W)
   A = codomain(id)
   h = hom(P, A, id.(f.(gens(P))))
-  return preimage(h, ideal(A, id.(W.(gens(J)))))
+  # Even though `id` seems to be type stable, the type is not inferred for empty lists for some reason.
+  # Thus, we need to to that manually. 
+  gg = Vector{elem_type(A)}(id.(W.(gens(J))))
+  return preimage(h, ideal(A, gg))
 end
 
 ### For introducing in Function to docu

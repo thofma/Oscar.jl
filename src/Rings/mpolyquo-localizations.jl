@@ -986,7 +986,6 @@ constructor takes as input the triple
       for g in gens(modulus(underlying_quotient(L)))
         iszero(S(res(g))) || error("map is not well defined")
       end
-      true
     end
     return new{DomainType, CodomainType, RestrictedMapType}(L, S, res)
   end
@@ -1258,7 +1257,8 @@ function kernel(f::MPolyAnyMap{<:MPolyRing, <:MPolyQuoLocRing})
   id =  _as_affine_algebra(W)
   A = codomain(id)
   h = hom(P, A, id.(f.(gens(P))), check=false)
-  return preimage(h, ideal(A, id.(W.(gens(J)))))
+  gg = Vector{elem_type(A)}(id.(W.(gens(J))))
+  return preimage(h, ideal(A, gg))
 end
 
 function is_isomorphism(
