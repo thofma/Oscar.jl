@@ -60,11 +60,11 @@ function algebraic_lattice(S::EllipticSurface, mwl_gens::Vector{<:EllCrvPt})
   GA[1:r,1:r] = G
   GA[r+1:n,r+1:n] = -2*identity_matrix(ZZ, l)
   gensA = vcat(basis, sections)
-  @vprint :ellipticK3 2 "computing intersection numbers"
+  @vprint :EllipticSurface 2 "computing intersection numbers"
   for i in 1:n
-    @vprint :ellipticK3 2 "\nrow $(i): \n"
+    @vprint :EllipticSurface 2 "\nrow $(i): \n"
     for j in max(i + 1, r + 1):n
-      @vprint :ellipticK3 2 "$(j) "
+      @vprint :EllipticSurface 2 "$(j) "
       GA[i,j] = intersect(gensA[i],gensA[j])
       GA[j,i] = GA[i,j]
     end
@@ -282,16 +282,16 @@ function relatively_minimal_model(E::EllipticSurface)
   projectionsY = []
   count = 0
 
-  @vprint :ellipticK3 2 "Blowing up Weierstrass model\n"
-  @vprint :ellipticK3 2 "in $(Crefined)\n"
+  @vprint :EllipticSurface 2 "Blowing up Weierstrass model\n"
+  @vprint :EllipticSurface 2 "in $(Crefined)\n"
   while true
     count = count+1
-    @vprint :ellipticK3 1 "blowup number: $(count)\n"
-    @vprint :ellipticK3 2 "computing singular locus\n"
+    @vprint :EllipticSurface 1 "blowup number: $(count)\n"
+    @vprint :EllipticSurface 2 "computing singular locus\n"
     I_sing_Y0 = ideal_sheaf_of_singular_locus(Y0)
-    @vprint :ellipticK3 2 "decomposing singular locus\n"
+    @vprint :EllipticSurface 2 "decomposing singular locus\n"
     I_sing_Y0 = maximal_associated_points(I_sing_Y0)
-    @vprint :ellipticK3 1 "number of singular points: $(length(I_sing_Y0))\n"
+    @vprint :EllipticSurface 1 "number of singular points: $(length(I_sing_Y0))\n"
     if length(I_sing_Y0)==0
       # stop if smooth
       break
@@ -305,10 +305,10 @@ function relatively_minimal_model(E::EllipticSurface)
     end
     pr_X1 = blow_up(I_sing_X0_1, covering=cov, var_name=varnames[1+mod(count, length(varnames))])
     X1 = domain(pr_X1)
-    @vprint :ellipticK3 1 "$(X1)\n"
+    @vprint :EllipticSurface 1 "$(X1)\n"
     E1 = exceptional_divisor(pr_X1)
 
-    @vprint :ellipticK3 2 "computing strict transforms\n"
+    @vprint :EllipticSurface 2 "computing strict transforms\n"
     # compute the exceptional divisors
     exceptionals = [strict_transform(pr_X1, e) for e in exceptionals]
     # move the divisors coming originally from S up to the next chart
@@ -369,9 +369,9 @@ end
   # TODO: the -2 selfintersection is probably some K3 artefact
   fiber_components_meeting_O = []
   for (pt, ft) in f
-    @vprint :ellipticK3 2 "normalizing fiber: "
+    @vprint :EllipticSurface 2 "normalizing fiber: "
     rt, f0, f1, G = standardize_fiber(S, ft)
-    @vprint :ellipticK3 2 "$rt \n"
+    @vprint :EllipticSurface 2 "$rt \n"
     append!(basisT , f1)
     push!(grams,G)
     push!(fiber_components_meeting_O, (pt, rt, f0))
@@ -393,11 +393,11 @@ function standardize_fiber(S::EllipticSurface, f::Vector{<:WeilDivisor})
   end
   r = length(f)
   G = -2*identity_matrix(ZZ, r)
-  @vprint :ellipticK3 2 "computing intersection numbers:"
+  @vprint :EllipticSurface 2 "computing intersection numbers:"
   for i in 1:r
-    @vprint :ellipticK3 2 "\nrow $(i): \n"
+    @vprint :EllipticSurface 2 "\nrow $(i): \n"
     for j in 1:i-1
-      @vprint :ellipticK3 2 "$(j) "
+      @vprint :EllipticSurface 2 "$(j) "
       G[i,j] = intersect(f[i],f[j])
       G[j,i] = G[i,j]
     end
@@ -465,10 +465,11 @@ function fiber_cartier(S::EllipticSurface, P::Vector = ZZ.([0,1]))
 end
 
 function fiber_components(S::EllipticSurface, P=[0,1])
-  @vprint :ellipticK3 2 "computing fiber components over $(P)\n"
+  @vprint :EllipticSurface 2 "computing fiber components over $(P)\n"
   F = fiber_cartier(S, P)
-  @vprint :ellipticK3 2 "decomposing fiber\n"
+  @vprint :EllipticSurface 2 "decomposing fiber   "
   comp = maximal_associated_points(ideal_sheaf(F))
+  @vprint :EllipticSurface 2 "done\n"
   return [weil_divisor(c) for c in comp]
 end
 
