@@ -1077,7 +1077,7 @@ function compose(
   return MPolyQuoLocalizedRingHom(domain(f), codomain(g), hom(R, codomain(g), [g(f(x)) for x in gens(R)], check=false), check=false)
 end
 
-(f::MPolyQuoLocalizedRingHom)(I::Ideal) = ideal(codomain(f), f.(domain(f).(small_generating_set(pre_saturated_ideal(pre_image_ideal(I))))))
+(f::MPolyQuoLocalizedRingHom)(I::Ideal) = ideal(codomain(f), f.(domain(f).(gens(I))))
 
 function ==(f::MPolyQuoLocalizedRingHom, g::MPolyQuoLocalizedRingHom) 
   domain(f) === domain(g) || return false
@@ -1991,4 +1991,3 @@ end
 function (W::MPolyDecRing)(f::MPolyLocRingElem)
   return W(forget_decoration(W)(f))
 end
-
