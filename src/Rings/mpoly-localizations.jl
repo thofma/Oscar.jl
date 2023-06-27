@@ -2010,6 +2010,10 @@ function saturated_ideal(
       I.saturated_ideal = ideal(R, elem_type(R)[])
       return I.saturated_ideal
     end
+#   if isone(I)
+#     I.saturated_ideal = ideal(R, one(R))
+#     return I.saturated_ideal
+#   end
     if strategy==:iterative_saturation
       Jsat = pre_saturated_ideal(I)
       U = inverted_set(L)

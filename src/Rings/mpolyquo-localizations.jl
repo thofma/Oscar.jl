@@ -644,6 +644,8 @@ function inv(L::MPolyQuoLocRing{BRT, BRET, RT, RET, MPolyPowersOfElement{BRT, BR
 end
 
 function inv(f::MPolyQuoLocRingElem{BRT, BRET, RT, RET, MPolyPowersOfElement{BRT, BRET, RT, RET}}) where {BRT, BRET, RT, RET}
+  isone(f) && return f
+  return parent(f)(denominator(f), numerator(f))
   return convert(parent(f), lifted_denominator(f)//lifted_numerator(f))
   # The following was the original line:
   return parent(f)(denominator(f), numerator(f))
