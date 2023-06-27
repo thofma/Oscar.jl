@@ -3026,3 +3026,6 @@ end
   return dim(saturated_ideal(I))
 end
 
+# Functionality to keep overhead of transfers low
+(f::AbsLocalizedRingHom)(I::MPolyLocalizedIdeal) = ideal(codomain(f), f.(domain(f).(small_generating_set(pre_saturated_ideal(I)))))
+
