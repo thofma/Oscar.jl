@@ -38,7 +38,8 @@ julia> valued_weighted_degree(f, val_trivial, w, return_vector=true)
 """
 function valued_weighted_degree(f::MPolyRingElem, val::TropicalSemiringMap, w::Vector; perturbation::Vector=[], return_vector::Bool=false)
   # compute the weighted degrees shifted by the coefficient valuations
-  vwds = [val(c)*TropicalSemiring(val)(dot(w,alpha)) for (c,alpha) in zip(AbstractAlgebra.coefficients(f),AbstractAlgebra.exponent_vectors(f))]
+  wEntryType = typeof(first(w))
+  vwds = [val(c)*TropicalSemiring(val)(dot(w,wEntryType.(alpha))) for (c,alpha) in zip(AbstractAlgebra.coefficients(f),AbstractAlgebra.exponent_vectors(f))]
 
   # compute the minimal degree
   # (note: max tropical semiring is reversely ordered, so min in the semiring is max in the conventional sense)
