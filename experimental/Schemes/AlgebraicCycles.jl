@@ -69,6 +69,24 @@ end
 # implementation of the arithmetic. 
 coefficient_dict(D::AbsAlgebraicCycle) = coefficient_dict(underlying_cycle(D))
 
+function coeff(D::AbsAlgebraicCycle, I::IdealSheaf)
+  d = coefficient_dict(D)
+  if I in keys(d)
+    return d[I]
+  else
+    return zero(coefficient_ring(D))
+  end
+end
+
+function Base.:<=(A::AbsAlgebraicCycle,B::AbsAlgebraicCycle)
+  for I in components(A)
+    coeff(A, I) <= coeff(B, I) || return false
+  end
+  for I in components(B)
+    coeff(A, I) <= coeff(B, I) || return false
+  end
+  return true
+end
 ### forwarding of the essential functionality
 
 function underlying_cycle(D::AbsAlgebraicCycle)

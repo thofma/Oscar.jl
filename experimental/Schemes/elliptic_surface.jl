@@ -1,4 +1,4 @@
-export elliptic_surface, trivial_lattice, weierstrass_model, weierstrass_chart, algebraic_lattice, zero_section, section, relatively_minimal_model, fiber_components
+export elliptic_surface, trivial_lattice, weierstrass_model, weierstrass_chart, algebraic_lattice, zero_section, section, relatively_minimal_model, fiber_components, generic_fiber, reducible_fibers
 
 @attributes mutable struct EllipticSurface{BaseField<:Field, BaseCurveFieldType} <: AbsCoveredScheme{BaseField}
   Y::CoveredScheme{BaseField}
@@ -21,10 +21,15 @@ export elliptic_surface, trivial_lattice, weierstrass_model, weierstrass_chart, 
     S = new{B,F}()
     S.E = generic_fiber
     S.bundle_number = bundle_number
+    set_attribute!(S, :is_irreducible=>true)
+    set_attribute!(S, :is_reduced=>true)
+    set_attribute!(S, :is_integral=>true)
     return S
   end
 
 end
+
+
 
 elliptic_surface(generic_fiber::EllCrv, s::Int) = EllipticSurface(generic_fiber, s)
 
@@ -36,10 +41,10 @@ function elliptic_surface(generic_fiber::EllCrv, s::Int, mwl_gens::Vector{<:EllC
 end
 
 function underlying_scheme(S::EllipticSurface)
-  if isdefined(S,:X)
+  if isdefined(S,:Y)
     return S.Y
   end
-  return relatively_minimal_model(generic_fiber(S), S.bundle_number)
+  return relatively_minimal_model(S)[1]
 end
 
 generic_fiber(S::EllipticSurface) = S.E
@@ -161,6 +166,9 @@ function weierstrass_model(S::EllipticSurface)
   S.Weierstrassmodel = Scov
   S.inc_Weierstrass = inc_S
 
+  set_attribute!(S, :is_irreducible=>true)
+  set_attribute!(S, :is_reduced=>true)
+  set_attribute!(S, :is_integral=>true)
   return Scov, inc_S
 end
 
@@ -332,13 +340,17 @@ function relatively_minimal_model(E::EllipticSurface)
   piY = reduce(*, reverse(projectionsY))
   E.blowup = piY
   E.inc_Y = inc_Y0
+
+  set_attribute!(Y0, :is_irreducible=>true)
+  set_attribute!(Y0, :is_reduced=>true)
+  set_attribute!(Y0, :is_integral=>true)
   return Y0, piY
 end
 
 #  global divisors0 = [strict_transform(pr_X1, e) for e in divisors0]
 #exceptionals_res = [pullback(inc_Y0)(e) for e in exceptionals]
 
-@attr function trivial_lattice(S::EllipticSurface)
+@attr function _trivial_lattice(S::EllipticSurface)
   #=
   inc_Y = S.inc_Y
   X = codomain(inc_Y)
@@ -360,32 +372,54 @@ end
     push!(f, [pt, fiber_components(S, pt)])
   end
   O = zero_section(S)
-  F = fiber_components(S, k.([23,1]))
-  @assert length(F) == 1 "todo: find an irreducible fiber"
-  basisT = [F[1], O]
+
+  F = weil_divisor(ideal_sheaf(irreducible_fiber(S)), check=false)
+  basisT = [F, O]
   @assert S.bundle_number == 2
 
   grams = [ZZ[0 1;1 -2]]
-  # TODO: the -2 selfintersection is probably some K3 artefact
-  fiber_components_meeting_O = []
+  # TODO: the -2 self intersection is probably some K3 artefact
+  fiber_componentsS = []
   for (pt, ft) in f
-    @vprint :EllipticSurface 2 "normalizing fiber: "
-    rt, f0, f1, G = standardize_fiber(S, ft)
-    @vprint :EllipticSurface 2 "$rt \n"
-    append!(basisT , f1)
-    push!(grams,G)
-    push!(fiber_components_meeting_O, (pt, rt, f0))
+    @vprint :EllipticSurface 2 "normalizing fiber: over $pt \n"
+    Ft0 = standardize_fiber(S, ft)
+    @vprint :EllipticSurface 2 "$(Ft0[1]) \n"
+    append!(basisT , Ft0[3][2:end])
+    push!(grams,Ft0[4][2:end,2:end])
+    push!(fiber_componentsS, vcat([pt], collect(Ft0)))
   end
   G = block_diagonal_matrix(grams)
+  # make way for some more pretty printing
+  for (pt,root_type,_,comp) in fiber_componentsS
+    for (i,I) in enumerate(comp)
+      name = string(root_type[1], root_type[2])
+      set_attribute!(components(I)[1], :name, string("Fiber component ",Tuple(pt), " ", name, "_", i-1))
+    end
+  end
+  return basisT, G, fiber_componentsS
+end
 
-  return basisT, fiber_components_meeting_O, G
+function trivial_lattice(S::EllipticSurface)
+  T = _trivial_lattice(S)[1:2]
+  return T
+end
+
+function reducible_fibers(S::EllipticSurface)
+  return _trivial_lattice(S)[3]
+end
+
+isone(I::IdealSheaf) = isone(I, space(I)[1])
+
+function isone(I::IdealSheaf, C::Covering)
+  return all(isone(I(U)) for U in C)
 end
 
 function standardize_fiber(S::EllipticSurface, f::Vector{<:WeilDivisor})
+  @req all(is_prime(i) for i in f) "not a vector of prime divisors"
   f = copy(f)
-  O = zero_section(S)
+  O = components(zero_section(S))[1]
   for (i,D) in enumerate(f)
-    if intersect(O,D)==1
+    if !isone(O+components(D)[1])
       global f0 = D
       deleteat!(f,i)
       break
@@ -393,12 +427,17 @@ function standardize_fiber(S::EllipticSurface, f::Vector{<:WeilDivisor})
   end
   r = length(f)
   G = -2*identity_matrix(ZZ, r)
-  @vprint :EllipticSurface 2 "computing intersection numbers:"
+  @vprint :EllipticSurface 2 "computing intersections:"
   for i in 1:r
-    @vprint :EllipticSurface 2 "\nrow $(i): \n"
+    @vprint :EllipticSurface 3 "\nrow $(i): \n"
     for j in 1:i-1
-      @vprint :EllipticSurface 2 "$(j) "
-      G[i,j] = intersect(f[i],f[j])
+      @vprint :EllipticSurface 4 "$(j) "
+      # we know the intersections are 0 or 1
+      if isone(components(f[i])[1]+components(f[j])[1])
+        G[i,j] = 0
+      else
+        G[i,j] = 1
+      end
       G[j,i] = G[i,j]
     end
   end
@@ -409,7 +448,10 @@ function standardize_fiber(S::EllipticSurface, f::Vector{<:WeilDivisor})
   R = root_lattice(rt[1], rt[2])
   b, I = is_isomorphic_with_permutation(G, -gram_matrix(R))
   @assert b
-  return rt, f0, f[I], G[I,I]
+  gensF = vcat([f0], f[I])
+  Gext, v = extended_ade(rt[1],rt[2])
+  Fdiv = sum(v[i]*gensF[i] for i in 1:length(gensF))
+  return rt, Fdiv, gensF, Gext
 end
 
 
@@ -469,11 +511,51 @@ function fiber_components(S::EllipticSurface, P=[0,1])
   F = fiber_cartier(S, P)
   @vprint :EllipticSurface 2 "decomposing fiber   "
   comp = maximal_associated_points(ideal_sheaf(F))
-  @vprint :EllipticSurface 2 "done\n"
-  return [weil_divisor(c) for c in comp]
+  @vprint :EllipticSurface 2 "done decomposing fiber\n"
+  return [weil_divisor(c, check=false) for c in comp]
 end
 
+
+function irreducible_fiber(S::EllipticSurface)
+  W = weierstrass_model(S)
+  d = numerator(discriminant(generic_fiber(S)))
+  kt = parent(d)
+  k = coefficient_ring(kt)
+  r = [k.(roots(i[1])) for i in factor(d) if i[2]>=2]
+  sing = reduce(append!,r, init=[])
+
+  if degree(d) >= 12*S.bundle_number - 1  # irreducible at infinity?
+    pt = k.([1, 0])
+  else
+    if is_finite(k)
+      for i in k
+        if !(i in sing)  # true if the fiber over [i,1] is irreducible
+          global pt = k.([i,1])
+          found = true
+          break
+        end
+      end
+      error("there is no smooth fiber defined over the base field")
+    else
+      i = k(0)
+      while true
+        i = i+1
+        if !(i in sing)
+          pt = k.([i,1])
+          break
+        end
+      end
+    end
+  end
+  # F = fiber_components(S,pt) this does not terminate .... so we have to build it by hand
+  # @assert length(F) == 1
+  F = fiber_cartier(S, pt)
+  return F
+end
+
+
 function section(S::EllipticSurface, P::EllCrvPt)
+  @vprint :EllipticSurface 3 "Computing a section from a point on the generic fiber\n"
   S0,incS0 = weierstrass_model(S)
   X0 = codomain(incS0)
   if P[3] == 0
@@ -491,7 +573,8 @@ function section(S::EllipticSurface, P::EllCrvPt)
     PX = strict_transform(f , PX)
   end
   PY = pullback(S.inc_Y, PX)
-  return WeilDivisor(PY)
+  set_attribute!(PY, :name, string("section: (",P[1]," : ",P[2]," : ",P[3],")"))
+  return WeilDivisor(PY, check=false)
 end
 
 @attr zero_section(S::EllipticSurface) = section(S, generic_fiber(S)([0,1,0]))
@@ -526,4 +609,201 @@ function is_isomorphic_with_permutation(A1::MatElem, A2::MatElem)
   b, T = is_isomorphic_with_map(graph(A1),graph(A2))
   @assert b || A1[T,T] == A2
   return b, T
+end
+
+################################################################################
+#
+# Some linear systems on elliptic surfaces
+#
+################################################################################
+
+"""
+    _prop217(E::EllCrv, P::EllCrvPt, k)
+
+Compute a basis for the linear system
+|O + P + kF|
+on the  minimal elliptic (K3) surface defined by E.
+Here F is the class of a fiber O the zero section
+and P any non-torsion section.
+
+```jldoctest
+julia> kt,t = polynomial_ring(GF(29),:t);
+
+julia> ktfield = fraction_field(kt);
+
+julia> bk = [((17*t^4 + 23*t^3 + 18*t^2 + 2*t + 6, 8*t^5 + 2*t^4 + 6*t^3 + 25*t^2 + 24*t + 5 )),
+             ((17*t^6 + 3*t^5 + 16*t^4 + 4*t^3 + 13*t^2 + 6*t + 5)//(t^2 + 12*t + 7), (4*t^8 + 19*t^7 + 14*t^6 + 18*t^5 + 27*t^4 + 13*t^3 + 9*t^2 + 14*t + 12)//(t^3 + 18*t^2 + 21*t + 13) ),
+             ((17*t^6 + 10*t^5 + 24*t^4 + 15*t^3 + 22*t^2 + 27*t + 5)//(t^2 + 16*t + 6), (20*t^8 + 24*t^7 + 22*t^6 + 12*t^5 + 21*t^4 + 21*t^3 + 9*t^2 + 21*t + 12)//(t^3 + 24*t^2 + 18*t + 19) ),
+             ((17*t^8 + 21*t^7 + 20*t^5 + 24*t^4 + 21*t^3 + 4*t^2 + 9*t + 13)//(t^4 + 17*t^3 + 12*t^2 + 28*t + 28), (23*t^11 + 25*t^10 + 8*t^9 + 7*t^8 + 28*t^7 + 16*t^6 + 7*t^5 + 23*t^4 + 9*t^3 + 27*t^2 + 13*t + 13)//(t^6 + 11*t^5 + 14*t^4 + 13*t^3 + 6*t^2 + 18*t + 12) )];
+
+julia> E = EllipticCurve(ktfield,[3*t^8+24*t^7+22*t^6+15*t^5+28*t^4+20*t^3+16*t^2+26*t+16, 24*t^12+27*t^11+28*t^10+8*t^9+6*t^8+16*t^7+2*t^6+10*t^5+3*t^4+22*t^3+27*t^2+10*t+3]);
+
+julia> bk = [E(collect(i)) for i in bk];
+
+julia> prop217(E,bk[2],2)
+5-element Vector{Any}:
+ (t^2 + 12*t + 7, 0)
+ (t^3 + 8*t + 3, 0)
+ (t^4 + 23*t + 2, 0)
+ (25*t + 22, 1)
+ (12*t + 28, t)
+
+julia> prop217(E,bk[1],1)
+2-element Vector{Any}:
+ (1, 0)
+ (t, 0)
+```
+"""
+function _prop217(E::EllCrv, P::EllCrvPt, k)
+  @req !iszero(P[3]) "P must not be torsion" # seems like we cannot check this
+  xn = numerator(P[1])
+  xd = denominator(P[1])
+  yn = numerator(P[2])
+  yd = denominator(P[2])
+  OP = divexact(max(degree(xd), degree(xn) - 4), 2)
+  dega = k + 2*OP
+  degb = k + 2*OP - 2 - divexact(degree(xd), 2) #?
+  base = base_ring(X)
+
+  R,ab = polynomial_ring(base,vcat([Symbol(:a,i) for i in 0:dega],[Symbol(:b,i) for i in 0:degb]),cached=false)
+  Rt, t1 = polynomial_ring(R,:t)
+  a = reduce(+,(ab[i+1]*t1^i for i in 0:dega), init=zero(Rt))
+  b = reduce(+,(ab[2+dega+j]*t1^j for j in 0:degb), init=zero(Rt))
+  c = a*xn(t1) - b*yn(t1)
+  r = mod(c, xd(t1))
+  # setup the linear equations for coefficients of r to vanish
+  # and for the degree of c to be bounded above by
+  # k + 2*OP + 4 + degree(xd)
+  eq1 = collect(coefficients(r))
+  eq2 = [coeff(c,i) for i in (k + 2*OP + 4 + degree(xd) + 1):degree(c)]
+  eqns = vcat(eq1, eq2)
+
+  # collect the equations as a matrix
+  cc = [[coeff(j, abi) for abi in ab] for j in eqns]
+  M = matrix(base, length(eqns), length(ab), reduce(vcat,cc, init=elem_type(base)[]))
+  # @assert M == matrix(base, cc) # does not work if length(eqns)==0
+  kerdim, K = kernel(M)
+  result = []
+  Bt = base_ring(base_field(E))
+  t = gen(Bt)
+  for j in 1:kerdim
+    aa = reduce(+, (K[i+1,j]*t^i for i in 0:dega), init=zero(Bt))
+    bb = reduce(+, (K[dega+i+2,j]*t^i for i in 0:degb), init=zero(Bt))
+    push!(result, (aa, bb))
+  end
+  # confirm the computation
+  @assert kerdim == 2*k + OP # prediced by Riemann-Roch
+  for (a,b) in result
+    @assert mod(a*xn - b*yn, xd) == 0
+    @assert degree(a) <= k + 2*OP
+    @assert degree(b) <= k + 2*OP - 2 - 1//2*degree(xd)
+    @assert degree(a*xn - b*yn) <= k + 2*OP + 4 + degree(xd)
+  end
+  return result
+end
+
+@doc raw"""
+    linear_system(X::EllipticSurface, P::EllCrvPt, k::Int64) -> LinearSystem
+
+Compute the linear system ``|O + P + k F|`` on the elliptic surface ``X``.
+Here ``F`` is the class of the fiber over ``[0:1]``, ``O`` the zero section
+and ``P`` any section given as a point on the generic fiber.
+"""
+function linear_system(X::EllipticSurface, P::EllCrvPt, k::Int64)
+  X.bundle_number == 2 || error("linear system implemented only for elliptic K3s")
+  FS = function_field(weierstrass_model(X)[1])
+  U = weierstrass_chart(X)
+  (x,y,t) = ambient_coordinates(U)
+
+  sections = elem_type(FS)[]
+  if iszero(P[3])
+    append!(sections, [FS(t)^(i-k) for i in 0:k])
+    append!(sections, [FS(t)^(i-k)*FS(x) for i in 0:k-4])
+  elseif iszero((2*P)[3])
+    error("not implemented for 2-torsion sections")
+  else
+    xn = numerator(P[1])
+    xd = denominator(P[1])
+    yn = numerator(P[2])
+    yd = denominator(P[2])
+
+    I = ambient_closure_ideal(U)
+    IP = ideal([x*xd(t)-xn(t),y*yd(t)-yn(t)])
+    issubset(I, IP) || error("P does not define a point on the Weierstrasschart")
+
+    @assert gcd(xn, xd)==1
+    @assert gcd(yn, yd)==1
+    ab = prop217(generic_fiber(X), P, k)
+    d = divexact(yd, xd)(t)
+    den = t^k(x*xd(t) - xn(t))
+    for (a,b) in ab
+      c = divexact(b*yn - a*xn, xd)
+      num = a(t)*x+b(t)*d*y + c(t)
+      push!(sections, FS(num//den))
+    end
+  end
+  return sections
+  sectionsX = pullback(X.blowup).(sections)
+  return sectionX
+end
+
+#=
+piYpb = pullback(piY)
+kY0 = function_field(Y0)
+
+D = PonY + OonY + FsonY
+L = linear_system(piYpb.(linsysS), D, check=false)
+@test any(order_on_divisor(g,PonY)==-1 for g in gens(L))
+#@test_broken in_linear_system(gens(L)[1], D) #something is wrong
+@vprint :ellipticK3 2 "computing subsystem\n"
+LsubY, Tmat = subsystem(L, NSgens[6], 1)
+Tmat = Tmat[1:rank(Tmat),:]
+LsubS = [sum(Tmat[i,j]*linsysS[j] for j in 1:ncols(Tmat)) for i in 1:nrows(Tmat)]
+#
+@assert length(gens(LsubY))==2
+=#
+
+function extended_ade(ADE::Symbol, n::Int)
+  R = change_base_ring(ZZ,gram_matrix(root_lattice(ADE,n)))
+  G = block_diagonal_matrix([ZZ[2;],R])
+  if ADE == :E && n == 8
+    G[1,n] = -1
+    G[n,1] = -1
+  end
+  if ADE == :E && n == 7
+    G[1,2] = -1
+    G[2,1] = -1
+  end
+  if ADE == :E && n == 6
+    G[1,n+1] = -1
+    G[n+1,1] = -1
+  end
+  if ADE == :A
+    G[1,2] = -1
+    G[2,1] = -1
+    G[1,n+1] = -1
+    G[n+1,1] = -1
+  end
+  if ADE == :D
+    G[1,n] = -1
+    G[n,1] = -1
+  end
+  @assert rank(G) == n
+  return -G, left_kernel(G)[2]
+end
+
+
+################################################################################
+#
+# patches for Oscar
+#
+################################################################################
+
+
+# Disable simplification for the usage of (decorated) quotient rings within the
+# schemes framework (speedup of ~2).
+function simplify(f::MPolyQuoRingElem{<:Union{<:MPolyRingElem, MPolyQuoLocRingElem,
+                                              <:MPolyQuoRingElem, MPolyLocRingElem}}
+  )
+  return f
 end
