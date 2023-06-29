@@ -440,9 +440,14 @@ end
 #  return W, spec_dict
 #end
 #
+function is_prime(I::IdealSheaf)
+  is_locally_prime(I) || return false
+  PD = maximal_associated_points(I)
+  return length(PD)==1
+end
 
-function is_prime(I::IdealSheaf) 
-  return all(U->is_prime(I(U)), basic_patches(default_covering(space(I))))
+function is_locally_prime(I::IdealSheaf)
+  return all(U->is_prime(I(U)) || is_one(I(U)), basic_patches(default_covering(space(I))))
 end
 
 function _minimal_power_such_that(I::Ideal, P::PropertyType) where {PropertyType}
@@ -478,7 +483,9 @@ function order_on_divisor(
     I::IdealSheaf;
     check::Bool=true
   )
-  @check is_prime(I) "ideal sheaf must be a sheaf of prime ideals"
+  # is prime is buggy for now
+  #@check is_prime(I) "ideal sheaf must be a sheaf of prime ideals"
+  @check is_locally_prime(I) "ideal sheaf must be a sheaf of prime ideals"
   X = space(I)::AbsCoveredScheme
   X == variety(parent(f)) || error("schemes not compatible")
   
@@ -513,14 +520,14 @@ function order_on_divisor(
   end
   R = ambient_coordinate_ring(V)
   J = saturated_ideal(I(V))
+  K = ambient_closure_ideal(V)
   floc = f[V]
   aR = ideal(R, numerator(floc))
   bR = ideal(R, denominator(floc))
 
-
   # The following uses ArXiv:2103.15101, Lemma 2.18 (4):
-  num_mult = _minimal_power_such_that(J, x->(issubset(quotient(x, aR), J)))[1]-1
-  den_mult = _minimal_power_such_that(J, x->(issubset(quotient(x, bR), J)))[1]-1
+  num_mult = _minimal_power_such_that(J, x->(issubset(quotient(x+K, aR), J)))[1]-1
+  den_mult = _minimal_power_such_that(J, x->(issubset(quotient(x+K, bR), J)))[1]-1
   return num_mult - den_mult
 #    # Deprecated code computing symbolic powers explicitly:
 #    L, map = Localization(OO(U), 
@@ -607,6 +614,7 @@ function maximal_associated_points(I::IdealSheaf)
 
 # run through all charts and try to match the components
   while length(charts_todo) > 0
+    @vprint :MaximalAssociatedPoints 2 "length(charts_todo) remaining charts to go through\n"
     U = pop!(charts_todo)
     !is_one(I(U)) || continue                        ## supp(I) might not meet all components
     components_here = minimal_primes(I(U))
@@ -715,7 +723,7 @@ function match_on_intersections(
       I::Union{<:MPolyIdeal, <:MPolyQuoIdeal, <:MPolyQuoLocalizedIdeal, <:MPolyLocalizedIdeal},
       associated_list::Vector{IdDict{AbsSpec,Ideal}},
       check::Bool=true)
-
+  @vprint :MaximalAssociatedPoints 2 "matching $(I) \n and $(J)\n on $(U)\n"
   matches = Int[]
   OOX = OO(X)
 
@@ -823,12 +831,16 @@ end
 ## show functions for Ideal sheaves
 ########################################################################### 
 function Base.show(io::IO, I::IdealSheaf)
-    X = scheme(I)
+  X = scheme(I)
+  if has_attribute(I,:name)
+    println(io, get_attribute(I, :name))
+  else
 
-  # If there is a simplified covering, use it!
-  covering = (has_attribute(X, :simplified_covering) ? simplified_covering(X) : default_covering(X))
-  n = npatches(covering)
-  println(io,"Ideal Sheaf on Covered Scheme with ",n," Charts")
+    # If there is a simplified covering, use it!
+    covering = (has_attribute(X, :simplified_covering) ? simplified_covering(X) : default_covering(X))
+    n = npatches(covering)
+    println(io,"Ideal Sheaf on Covered Scheme with ",n," Charts")
+  end
 end
 
 function show_details(I::IdealSheaf)

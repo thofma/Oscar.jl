@@ -525,13 +525,16 @@ function Base.:+(I::T, J::T) where {T<:AbsLocalizedIdeal}
 end
 
 function Base.:^(I::T, k::IntegerUnion) where {T<:AbsLocalizedIdeal}
+  R = base_ring(I)
   if k == 2
-    return ideal(base_ring(I), [a*b for a in gens(I) for b in gens(I)])
+    return ideal(R, [a*b for a in gens(I) for b in gens(I)])
   elseif k == 1
     return I
+  elseif k == 0
+    return ideal(R, one(R))
   else
     q, r = divrem(k, 2)
-    return ideal(base_ring(I), [a*b for a in gens(I^q) for b in gens(I^(q+r))])
+    return ideal(R, [a*b for a in gens(I^q) for b in gens(I^(q+r))])
   end
 end
 

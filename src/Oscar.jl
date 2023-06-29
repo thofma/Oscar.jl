@@ -105,6 +105,9 @@ function __init__()
     add_verbose_scope(:MaximalAssociatedPoints)
     add_assert_scope(:MaximalAssociatedPoints)
 
+    add_verbose_scope(:Divisors)
+    add_assert_scope(:Divisors)
+
     add_verbose_scope(:Blowup)
     add_assert_scope(:Blowup)
 
