@@ -4,6 +4,10 @@ using Distributed
 
 import Random
 
+import InteractiveUtils
+
+using Printf
+
 numprocs_str = get(ENV, "NUMPROCS", "1")
 
 oldWorkingDirectory = pwd()
@@ -63,6 +67,10 @@ end
 
 @everywhere const stats_dict = Dict{String,NamedTuple}()
 
+if VERSION >= v"1.8.0"
+  @everywhere GC.enable_logging(true)
+end
+
 function print_stats(io::IO; fmt=PrettyTables.tf_unicode, max=50)
   sorted = sort(collect(stats_dict), by=x->x[2].time, rev=true)
   println(io, "### Stats per file")
@@ -78,17 +86,29 @@ function print_stats(io::IO; fmt=PrettyTables.tf_unicode, max=50)
   PrettyTables.pretty_table(io, table; tf=fmt, max_num_of_rows=max, header=header, formatters=formatters)
 end
 
+@everywhere function meminfo_julia()
+  # @printf "GC total:  %9.3f MiB\n" Base.gc_total_bytes(Base.gc_num())/2^20
+  # Total bytes (above) usually underreports, thus I suggest using live bytes (below)
+  @printf "GC live:   %9.3f MiB\n" Base.gc_live_bytes()/2^20
+  @printf "JIT:       %9.3f MiB\n" Base.jit_total_bytes()/2^20
+  @printf "Max. RSS:  %9.3f MiB\n" Sys.maxrss()/2^20
+  @printf "Free mem:  %9.3f MiB\n" Sys.free_memory()/2^20
+  @printf "Free pmem: %9.3f MiB\n" Sys.free_physical_memory()/2^20
+end
+
 # we only want to print stats for files that run tests and not those that just
 # include other files
 @everywhere const innermost = Ref(true)
 # redefine include to print and collect some extra stats
 @everywhere function include(str::String)
+  meminfo_julia()
   innermost[] = true
   # we pass the identity to avoid recursing into this function again
   @static if compiletimes
     compile_elapsedtimes = Base.cumulative_compile_time_ns()
   end
   stats = @timed Base.include(identity, Main, str)
+  GC.gc(false); GC.gc(true);
   # skip files which just include other files and ignore
   # files outside of the oscar folder
   if innermost[] && !isabspath(str)
@@ -147,9 +167,13 @@ testlist = [
   "StraightLinePrograms/runtests.jl",
 ]
 
+InteractiveUtils.versioninfo(verbose=true)
+
 # if many workers, distribute tasks across them
 # otherwise, is essentially a serial loop
 pmap(include, testlist)
+
+InteractiveUtils.versioninfo(verbose=true)
 
 @static if compiletimes
   Base.cumulative_compile_timing(false);

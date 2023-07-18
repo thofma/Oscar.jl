@@ -23,16 +23,13 @@ jobs:
       fail-fast: false
       matrix:
         julia-version:
-          - '1.6'
-          - '1.9'
           - '~1.10.0-0'
           - 'nightly'
         os:
           - ubuntu-latest
-        include:
-          # Add a few macOS jobs (not too many, the number we can run in parallel is limited)
-          - julia-version: 'nightly'
-            os: macOS-latest
+        threads:
+          - '1'
+        dummy: [ 1, 2, 3, 4, 5, 6, 7, 8 ]
 
     steps:
       - uses: actions/checkout@v3
@@ -47,89 +44,10 @@ jobs:
       - name: "Build package"
         uses: julia-actions/julia-buildpkg@v1
       - name: "limit OpenMP threads"
-        if: runner.os == 'macOS'
-        # restrict number of openMP threads on macOS due to oversubscription
-        run: echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
+        run: echo "OMP_NUM_THREADS=${{ matrix.threads }}" >> $GITHUB_ENV
       - name: "Run tests"
         uses: julia-actions/julia-runtest@latest
         with:
           annotate: ${{ matrix.julia-version == '1.9' }}
-          coverage: ${{ matrix.julia-version == '1.9' }}
           depwarn: error
-      - name: "Process code coverage"
-        if: matrix.julia-version == '1.9'
-        uses: julia-actions/julia-processcoverage@v1
-        with:
-          directories: src,experimental
-      - name: "Upload coverage data to Codecov"
-        if: matrix.julia-version == '1.9'
-        continue-on-error: true
-        uses: codecov/codecov-action@v3
 
-  doctest:
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 150
-    continue-on-error: ${{ matrix.julia-version == 'nightly' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        julia-version:
-          - '1.9'
-          - '~1.10.0-0'
-          - 'nightly'
-        os:
-          - ubuntu-latest
-        include:
-          # Add macOS jobs (not too many, the number we can run in parallel is limited)
-          - julia-version: '1.9'
-            os: macOS-latest
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          # For Codecov, we must also fetch the parent of the HEAD commit to
-          # be able to properly deal with PRs / merges
-          fetch-depth: 2
-      - name: "Set up Julia"
-        uses: julia-actions/setup-julia@v1
-        with:
-          version: ${{ matrix.julia-version }}
-      - name: "Build package"
-        uses: julia-actions/julia-buildpkg@v1
-      - name: "limit OpenMP threads"
-        if: runner.os == 'macOS'
-        # restrict number of openMP threads on macOS due to oversubscription
-        run: echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
-      - name: "Run tests"
-        # HACK: since macOS runners are so expensive, we reuse this one to run
-        # both regular tests and doctests
-        if: runner.os == 'macOS'
-        uses: julia-actions/julia-runtest@latest
-        with:
-          annotate: ${{ matrix.julia-version == '1.9' }}
-          coverage: ${{ matrix.julia-version == '1.9' }}
-          depwarn: error
-      - name: "Setup package"
-        run: |
-          julia --project=docs --color=yes -e '
-            using Pkg
-            Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.instantiate()'
-      - name: "Run doctests"
-        run: |
-          julia ${{ matrix.julia-version == '1.9' && '--code-coverage' || '' }} \
-            --project=docs --depwarn=error --color=yes -e'
-              using Documenter
-              include("docs/documenter_helpers.jl")
-              using Oscar
-              DocMeta.setdocmeta!(Oscar, :DocTestSetup, Oscar.doctestsetup(); recursive = true)
-              doctest(Oscar)'
-      - name: "Process code coverage"
-        if: matrix.julia-version == '1.9'
-        uses: julia-actions/julia-processcoverage@v1
-        with:
-          directories: src,experimental
-      - name: "Upload coverage data to Codecov"
-        if: matrix.julia-version == '1.9'
-        continue-on-error: true
-        uses: codecov/codecov-action@v3
