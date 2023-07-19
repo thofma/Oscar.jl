@@ -10,6 +10,7 @@ include("Matrices.jl")
 include("Fields.jl")
 include("TropicalGeometry.jl")
 include("QuadForm.jl")
+include("Groups.jl")
 include("polymake/runtests.jl")
 include("upgrades/runtests.jl")
 
