@@ -267,6 +267,8 @@ set of random linear combinations in every affine patch.
 """
 function simplify!(I::IdealSheaf)
   for U in basic_patches(default_covering(space(I)))
+    Oscar.object_cache(underlying_presheaf(I))[U] = ideal(OO(U), small_generating_set(I(U)))
+    #=
     n = ngens(I(U)) 
     n == 0 && continue
     R = ambient_coordinate_ring(U)
@@ -281,6 +283,8 @@ function simplify!(I::IdealSheaf)
       push!(new_gens, new_gen)
       K = ideal(OO(U), new_gens)
     end
+    Oscar.object_cache(underlying_presheaf(I))[U] = K 
+    =#
   end
   return I
 end
