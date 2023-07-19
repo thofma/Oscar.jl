@@ -356,6 +356,7 @@ function _separate_singularities!(X::EllipticSurface)
     redfib = [f[1] for f in factor(disc)]
     UU = PrincipalOpenSubset(U, redfib)
     set_attribute!(X, :weierstrass_chart_X => UU)
+    push!(refined_charts, UU)
     if length(redfib)==1
       push!(refined_charts, U)
     else
