@@ -347,11 +347,15 @@ function _separate_singularities!(X::EllipticSurface)
   dec_info = []
   if isone(IsingU)
     push!(refined_charts, U)
+    # we want one smooth weierstrass chart
+    set_attribute!(X, :weierstrass_chart_X => U)
   else
     # there is at most one singularity in every fiber
     # project the singular locus to an affine chart of P1
     disc = gens(eliminate(IsingU, coordinates(U)[1:2]))[1]
     redfib = [f[1] for f in factor(disc)]
+    UU = PrincipalOpenSubset(U, redfib)
+    set_attribute!(X, :weierstrass_chart_X => UU)
     if length(redfib)==1
       push!(refined_charts, U)
     else
