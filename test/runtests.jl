@@ -8,6 +8,25 @@ import InteractiveUtils
 
 using Printf
 
+if VERSION >= v"1.10.0-DEV"
+  jlmax = @ccall jl_gc_get_max_memory()::UInt64
+  maxmem = @ccall uv_get_total_memory()::UInt64
+  limmem = @ccall uv_get_constrained_memory()::UInt64
+  if limmem > 0 && limmem < maxmem
+    maxmem = limmem
+  end
+  # set the heap limit to half the available memory
+  maxmem *= 0.5
+  memenv = parse(Int, get(ENV, "OSCARCI_MAX_MEM_GB", "0")) * 2^30
+  if memenv > 0
+    maxmem = memenv
+  end
+  if maxmem > 0 && maxmem < jlmax
+    println("OscarCI: Limiting memory from ", Base.format_bytes(jlmax), " to ", Base.format_bytes(maxmem));
+    @ccall jl_gc_set_max_memory(maxmem::UInt64)::Cvoid
+  end
+end
+
 numprocs_str = get(ENV, "NUMPROCS", "1")
 
 oldWorkingDirectory = pwd()
