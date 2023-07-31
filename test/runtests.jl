@@ -17,7 +17,7 @@ if VERSION >= v"1.10.0-DEV"
   end
   # set the heap limit to half the available memory
   maxmem *= 0.5
-  memenv = parse(Int, get(ENV, "OSCARCI_MAX_MEM_GB", "0")) * 2^30
+  memenv = parse(Float64, get(ENV, "OSCARCI_MAX_MEM_GB", "0")) * 2^30
   if memenv > 0
     maxmem = memenv
   end
