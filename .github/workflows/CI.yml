@@ -23,18 +23,10 @@ jobs:
       fail-fast: false
       matrix:
         julia-version:
-          - '~1.10.0-0'
           - 'nightly'
         os:
           - ubuntu-latest
         memlimit: [ '2', '2.5', '3', '3.5', '4', '4.5', '5.0', '5.5', '6']
-        include:
-          - julia-version: 'nightly'
-            os: macOS-latest
-            memlimit: 8
-          - julia-version: 'nightly'
-            os: macOS-latest
-            memlimit: 11
 
     steps:
       - uses: actions/checkout@v3
@@ -42,10 +34,10 @@ jobs:
           # For Codecov, we must also fetch the parent of the HEAD commit to
           # be able to properly deal with PRs / merges
           fetch-depth: 2
-      - name: "Set up Julia"
-        uses: julia-actions/setup-julia@v1
+      - name: "Install custom julia"
+        uses: julia-actions/install-julia-from-url@main
         with:
-          version: ${{ matrix.julia-version }}
+          url: 'https://buildkite.com/organizations/julialang/pipelines/julia-master/builds/26744/jobs/0189f42f-fe11-457a-b42b-777267811f32/artifacts/0189f502-babd-4d4c-9236-279441c03b88'
       - name: "Build package"
         uses: julia-actions/julia-buildpkg@v1
       - name: "limit OpenMP threads"
