@@ -4,8 +4,6 @@ export EmptyScheme
 export IdealSheaf
 export ProjectiveScheme
 export ProjectiveSchemeMor
-export ToricCoveredScheme
-export ToricSpec
 export VarietyFunctionField
 export VarietyFunctionFieldElem
 
@@ -203,10 +201,10 @@ identifications given by the glueings in the `default_covering`.
 
     R = PreSheafOnScheme(X, production_func, restriction_func,
                     OpenType=AbsSpec, OutputType=Ring,
-                    RestrictionType=Hecke.Map,
+                    RestrictionType=Map,
                     is_open_func=is_open_func
                    )
-    return new{typeof(X), Union{AbsSpec, SpecOpen}, Ring, Hecke.Map}(R)
+    return new{typeof(X), Union{AbsSpec, SpecOpen}, Ring, Map}(R)
   end
 
   ### Structure sheaf on covered schemes
@@ -394,10 +392,10 @@ identifications given by the glueings in the `default_covering`.
 
     R = PreSheafOnScheme(X, production_func, restriction_func,
                       OpenType=Union{AbsSpec, SpecOpen}, OutputType=Ring,
-                      RestrictionType=Hecke.Map,
+                      RestrictionType=Map,
                       is_open_func=_is_open_func_for_schemes(X)
                      )
-    return new{typeof(X), Union{AbsSpec, SpecOpen}, Ring, Hecke.Map}(R)
+    return new{typeof(X), Union{AbsSpec, SpecOpen}, Ring, Map}(R)
   end
 end
 
@@ -453,9 +451,10 @@ identifications given by the glueings in the `default_covering`.
       length(V) == 0 && return ideal(OO(U), one(OO(U))) # In this case really nothing is defined here.
                                                         # Just return the unit ideal so that the 
                                                         # associated subscheme is empty.
-      result = ideal(OO(U), zero(OO(U)))
+      result = ideal(OO(U), one(OO(U)))
+      V = filter!(x->(x isa PrincipalOpenSubset && ambient_scheme(x) === U), V)
       for VV in V
-        result = result + ideal(OO(U), lifted_numerator.(gens(ID[VV])))
+        result = intersect(result, ideal(OO(U), gens(saturated_ideal(production_func(F, VV)))))
       end
       return result
     end
@@ -478,9 +477,10 @@ identifications given by the glueings in the `default_covering`.
         length(V) == 0 && return ideal(OO(U), one(OO(U))) # In this case really nothing is defined here.
         # Just return the unit ideal so that the 
         # associated subscheme is empty.
-        result = ideal(OO(U), zero(OO(U)))
+        result = ideal(OO(U), one(OO(U)))
+        V = filter!(x->(x isa PrincipalOpenSubset && ambient_scheme(x) === U), V)
         for VV in V
-          result = result + ideal(OO(U), lifted_numerator.(gens(ID[VV])))
+          result = intersect(result, ideal(OO(U), gens(saturated_ideal(production_func(F, VV)))))
         end
         return result
       end
@@ -509,9 +509,10 @@ identifications given by the glueings in the `default_covering`.
         length(V) == 0 && return ideal(OO(U), one(OO(U))) # In this case really nothing is defined here.
         # Just return the unit ideal so that the 
         # associated subscheme is empty.
-        result = ideal(OO(U), zero(OO(U)))
+        result = ideal(OO(U), one(OO(U)))
+        V = filter!(x->(x isa PrincipalOpenSubset && ambient_scheme(x) === U), V)
         for VV in V
-          result = result + ideal(OO(U), lifted_numerator.(gens(ID[VV])))
+          result = intersect(result, ideal(OO(U), gens(saturated_ideal(production_func(F, VV)))))
         end
         return result
       end
@@ -530,10 +531,10 @@ identifications given by the glueings in the `default_covering`.
 
     Ipre = PreSheafOnScheme(X, production_func, restriction_func,
                       OpenType=AbsSpec, OutputType=Ideal,
-                      RestrictionType=Hecke.Map,
+                      RestrictionType=Map,
                       is_open_func=_is_open_func_for_schemes_without_specopen(X)
                      )
-    I = new{typeof(X), AbsSpec, Ideal, Hecke.Map}(ID, OOX, Ipre)
+    I = new{typeof(X), AbsSpec, Ideal, Map}(ID, OOX, Ipre)
     @check begin
       # Check that all ideal sheaves are compatible on the overlaps.
       # TODO: eventually replace by a check that on every basic

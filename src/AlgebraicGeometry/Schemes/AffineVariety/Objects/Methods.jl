@@ -72,15 +72,15 @@ function Base.show(io::IO, ::MIME"text/plain", X::AffineVariety{<:Field,<:MPolyR
   println(io, Lowercase(), base_ring(X))
   print(io, Dedent(), "with coordinate")
   length(coordinates(X)) > 1 && print(io, "s")
-  print(io, " ")
-  print(io, join(coordinates(X), ", "))
+  print(io, " [")
+  print(io, join(coordinates(X), ", "), "]")
 end
 
 # In a more compact printing, we allow unicode printing, whenever unicode is
 # allowed, but we keep as an option of not printing the coordinates. For
 # instance, in some nested printings for morphisms, we might have already
 # mentioned the coordinates, and so `show_coord = false` ensures that we avoid
-# redundacy
+# redundancy
 function Base.show(io::IO, X::AffineVariety{<:Field, <:MPolyRing}, show_coord::Bool = true)
   io = pretty(io)
   if get(io, :supercompact, false)
@@ -116,8 +116,8 @@ function Base.show(io::IO, X::AffineVariety{<:Field, <:MPolyRing}, show_coord::B
         c = coordinates(X)
         print(io, " with coordinate")
         length(c) > 1 && print(io, "s")
-        print(io, " ")
-        print(io, join(c, ", "))
+        print(io, " [")
+        print(io, join(c, ", "), "]")
       end
     else
       print(io, "Affine $(dim(X))-space over ")
@@ -130,8 +130,8 @@ function Base.show(io::IO, X::AffineVariety{<:Field, <:MPolyRing}, show_coord::B
         c = coordinates(X)
         print(io, " with coordinate")
         length(c) > 1 && print(io, "s")
-        print(io, " ")
-        print(io, join(c, ", "))
+        print(io, " [")
+        print(io, join(c, ", "), "]")
       end
     end
   end

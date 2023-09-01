@@ -61,7 +61,6 @@
 @alias issemisimple is_semisimple
 @alias issimplicial is_simplicial
 @alias issingular is_singular
-@alias isskewsymmetric_matrix is_skewsymmetric_matrix
 @alias issmooth_curve is_smooth_curve
 @alias issolvable is_solvable
 @alias issupersolvable is_supersolvable
@@ -69,6 +68,8 @@
 @alias isunipotent is_unipotent
 @alias isunital is_unital
 @alias iswelldefined is_welldefined
+@alias representative_action is_conjugate_with_data
+@alias representative_action_in_gl_or_sl is_conjugate_with_data_in_gl_or_sl
 
 # Allow backwards compatibility after removal of Oscar.Graphs module.
 const Graphs = Oscar

@@ -106,14 +106,11 @@ multiplicative set ``S ⊂ P`` of type `MultSetType`.
 end
 
 ### for convenience of later use
-MPAnyQuoRing = Union{MPolyQuoLocRing, 
-                MPolyQuoRing
-               }
+const MPAnyQuoRing = Union{MPolyQuoLocRing, MPolyQuoRing}
 
-MPAnyNonQuoRing = Union{MPolyRing, MPolyLocRing
-                  }
+const MPAnyNonQuoRing = Union{MPolyRing, MPolyLocRing}
 
-MPolyAnyRing = Union{MPolyRing, MPolyQuoRing,
+const MPolyAnyRing = Union{MPolyRing, MPolyQuoRing,
                 MPolyLocRing,MPolyQuoLocRing
                }
 
@@ -668,7 +665,9 @@ function convert(
   isone(I) && return zero(L)
   denoms = denominators(inverted_set(W))
   if iszero(length(denoms)) || all(x->isone(x), denoms)
-    return L(Q(a)*inv(Q(b)))
+    success, q = divides(Q(a), Q(b))
+    success || error("element can not be converted")
+    return L(q)
   end
   d = prod(denominators(inverted_set(W)); init=one(R))
   powers_of_d = [d]
@@ -1074,7 +1073,7 @@ end
 
 function compose(
     f::MPolyQuoLocalizedRingHom, 
-    g::Hecke.Map{<:Ring, <:Ring}
+    g::Map{<:Ring, <:Ring}
   )
   codomain(f) === domain(g) || error("maps are not compatible")
 
@@ -1276,7 +1275,7 @@ end
 
 ### The following method is also required for the internals of the generic 
 # kernel routine for localized rings.
-function kernel(f::MPolyAnyMap{<:MPolyRing, <:MPolyQuoLocRing})
+@attr MPolyIdeal function kernel(f::MPolyAnyMap{<:MPolyRing, <:MPolyQuoLocRing})
   P = domain(f)
   L = codomain(f)
   I = ideal(L, zero(L))
@@ -1289,6 +1288,14 @@ function kernel(f::MPolyAnyMap{<:MPolyRing, <:MPolyQuoLocRing})
   h = hom(P, A, id.(f.(gens(P))), check=false)
   gg = Vector{elem_type(A)}(id.(W.(gens(J))))
   return preimage(h, ideal(A, gg))
+end
+
+@attr MPolyQuoIdeal function kernel(f::MPolyAnyMap{<:MPolyQuoRing, <:MPolyQuoLocRing})
+  A = domain(f)
+  R = base_ring(A)
+  ff = hom(R, codomain(f), f.(gens(A)), check=false)
+  K = kernel(ff)
+  return ideal(A, [g for g in A.(gens(K)) if !iszero(g)])
 end
 
 function is_isomorphism(
@@ -1562,14 +1569,14 @@ Ideals in localizations of affine algebras.
   W::LocRingType
 
   # fields for caching 
-  map_from_base_ring::Hecke.Map
+  map_from_base_ring::Map
 
   J::MPolyLocalizedIdealType
  
   function MPolyQuoLocalizedIdeal(
       W::MPolyQuoLocRing, 
       g::Vector{LocRingElemType};
-      map_from_base_ring::Hecke.Map = MapFromFunc(
+      map_from_base_ring::Map = MapFromFunc(
           base_ring(W), 
           W,
           x->W(x),
@@ -1603,7 +1610,7 @@ pre_image_ideal(I::MPolyQuoLocalizedIdeal) = I.J
 ngens(I::MPolyQuoLocalizedIdeal) = length(I.gens)
 
 ### a shorthand notation for any MPolyIdeal 
-MPolyAnyIdeal = Union{MPolyIdeal, MPolyQuoIdeal,
+const MPolyAnyIdeal = Union{MPolyIdeal, MPolyQuoIdeal,
                  MPolyLocalizedIdeal, MPolyQuoLocalizedIdeal
                 }
 
@@ -2131,7 +2138,7 @@ end
   I = ideal(A, [phi(g) for g in gens(modulus(underlying_quotient(L)))]) + ideal(A, [one(A)-theta[k]*phi(f[k]) for k in 1:r])
   ordering = degrevlex(gens(A)[r+1:end])
   if r > 0 
-    ordering = lex(theta)*ordering
+    ordering = deglex(theta)*ordering
   end
   Q = MPolyQuoRing(A, I, ordering)
   function my_fun(g)
@@ -2188,8 +2195,8 @@ Note: This is only available for localizations at rational points.
 
 
   ## determine the relations
-  singular_assure(I_shift, oL)
-  syz_mod=Singular.syz(I_shift.gens.S)
+  gensSord_shift = singular_generators(I_shift, oL)
+  syz_mod = Singular.syz(gensSord_shift)
 
   ## prepare Nakayama-check for minimal generating system
   F = free_module(R, length(Jlist))

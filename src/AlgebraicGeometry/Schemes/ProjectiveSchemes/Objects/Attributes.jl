@@ -141,7 +141,7 @@ defined by ideal(x + y)
 julia> P = ambient_space(X)
 Projective space of dimension 2
   over rational field
-with homogeneous coordinates x, y, z
+with homogeneous coordinates [x, y, z]
 ```
 """
 @attr function ambient_space(X::AbsProjectiveScheme)
@@ -157,6 +157,15 @@ Return the generators of the homogeneous coordinate ring of ``X``.
 function homogeneous_coordinates(X::AbsProjectiveScheme)
   return gens(homogeneous_coordinate_ring(X))
 end
+
+
+function weights(X::AbsProjectiveScheme)
+  S = homogeneous_coordinate_ring(ambient_space(X))
+  A = grading_group(S)
+  elementary_divisors(A)==[0] || error("not ZZ graded")
+  return [degree(i)[1] for i in gens(S)]
+end
+
 
 ##############################################################################
 # Converter to covered scheme
@@ -222,7 +231,7 @@ julia> S, _ = grade(Q["x", "y", "z"][1]);
 julia> P = projective_scheme(S)
 Projective space of dimension 2
   over quotient of multivariate polynomial ring by ideal with 1 generator
-with homogeneous coordinates x, y, z
+with homogeneous coordinates [x, y, z]
 
 julia> defining_ideal(P)
 ideal()
@@ -258,7 +267,7 @@ julia> S, _ = grade(Q["x", "y", "z"][1]);
 julia> P = projective_scheme(S)
 Projective space of dimension 2
   over quotient of multivariate polynomial ring by ideal with 1 generator
-with homogeneous coordinates x, y, z
+with homogeneous coordinates [x, y, z]
 
 julia> affine_cone(P)
 (Spec of quotient of multivariate polynomial ring, Map with following data
@@ -387,7 +396,7 @@ julia> S, _ = grade(Q["x", "y", "z"][1]);
 julia> P = projective_scheme(S)
 Projective space of dimension 2
   over quotient of multivariate polynomial ring by ideal with 1 generator
-with homogeneous coordinates x, y, z
+with homogeneous coordinates [x, y, z]
 
 julia> homogeneous_coordinates_on_affine_cone(P)
 3-element Vector{MPolyQuoRingElem{QQMPolyRingElem}}:

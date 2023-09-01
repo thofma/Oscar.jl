@@ -215,7 +215,7 @@ function restrict(f::AbsCoveredSchemeMorphism, DD::Covering)
   inherit_glueings!(new_domain, domain(phi))
   _register!(new_domain, X)
 
-  psi = CoveringMorphism(new_domain, DD, res_dict, check=true)
+  psi = CoveringMorphism(new_domain, DD, res_dict, check=false)
   restriction_cache(f)[DD] = psi
   return psi
 end
@@ -372,3 +372,6 @@ function inherit_glueings!(ref::Covering, orig::Covering)
   return ref
 end
 
+### Generic pullback and pushforward for composite maps
+pushforward(f::Generic.CompositeMap, a::Any) = pushforward(map2(f), pushforward(map1(f), a))
+pullback(f::Generic.CompositeMap, a::Any) = pullback(map1(f), pullback(map2(f), a))

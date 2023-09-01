@@ -73,8 +73,15 @@ with restriction
 ```
 """
 @attributes mutable struct BlowupMorphism{
-                              CodomainType<:AbsCoveredScheme
-                             } # TODO: Derive this from AbsCoveredSchemeMorphism ? 
+     DomainType<:AbsCoveredScheme, # Not a concrete type in general because this is lazy
+     CodomainType<:AbsCoveredScheme,
+     BaseMorphismType # Nothing in case of no base change
+   } <: AbsCoveredSchemeMorphism{
+                                 DomainType,
+                                 CodomainType,
+                                 BaseMorphismType,
+                                 BlowupMorphism
+                                }
   projective_bundle::CoveredProjectiveScheme 
   codomain::CodomainType   # in general a CoveredScheme
   center::IdealSheaf      # on codomain
@@ -88,9 +95,12 @@ with restriction
     )
     X = base_scheme(IP)
     X === scheme(I) || error("ideal sheaf not compatible with blown up variety")
-    return new{typeof(X)}(IP, X, I)
+    return new{AbsCoveredScheme, typeof(X), Nothing}(IP, X, I)
   end
 end
+
+### Forward the essential functionality
+underlying_morphism(phi::BlowupMorphism) = projection(phi)
 
 function domain(p::BlowupMorphism)
   if !isdefined(p, :domain)
@@ -151,10 +161,69 @@ function strict_transform(p::BlowupMorphism, inc::CoveredClosedEmbedding)
   inc_Z_trans = CoveredClosedEmbedding(Y, I_trans, 
                                        covering=simplified_covering(Y), # Has been set by the previous call
                                        check=false)
-  inc_cov = covering_morphism(inc_Z_trans)
+  inc_dom_cov = covering_morphism(inc_Z_trans)
+  inc_cod_cov = covering_morphism(inc)
 
   Z_trans = domain(inc_Z_trans)
   pr_res = restrict(projection(p), inc_Z_trans, inc)
+
+  if has_attribute(p, :isomorphism_on_open_subset)
+    OOX = OO(X)
+    OOY = OO(Y)
+    p_iso = isomorphism_on_open_subset(p)
+    U = domain(p_iso)::PrincipalOpenSubset
+    V = codomain(p_iso)::PrincipalOpenSubset
+    V_amb = ambient_scheme(V)
+    U_amb = ambient_scheme(U)
+
+    # We have the following diagram:
+    #             inc_dom
+    #     Z_trans    ↪     Y   ⊃ U_amb ⊃ U
+    #
+    #  pr_res↓             ↓ p           ↓ p_iso
+    #        Z       ↪     X   ⊃ V_amb ⊃ V
+    #             inc_cod
+    #
+    # Given all the refinements that potentially had to be done, we have 
+    # to do the following.
+    #  1. Find a `patch` `U_sub` of the `domain` of `inc_dom_cov` for which 
+    #    inc_dom : U_sub -> W has a codomain `W` which has `U_amb` as an 
+    #    ancestor. Since `U_amb` is one of the `affine_charts` of `Y`, this will work. 
+
+    k = findfirst(x->has_ancestor(y->y===U_amb, codomain(inc_dom_cov[x])), patches(domain(inc_dom_cov)))
+    U_sub = patches(domain(inc_dom_cov))[k]
+
+    #  2. pr_res : U_amb -> V_amb has some codomain such that there exists 
+    #    an ancestor `VV` in the `domain` of `inc_dom_cov` such that 
+    #    inc_dom : VV -> W' has a codomain with `V_amb` as an ancestor. 
+    #  3. outside the `complement_equation`s of `U` and `V` the projection 
+    #    was an isomorphism. Then the restriction of `pr_res` to those 
+    #    complements in `U_sub` and `V_sub` also is.
+    U_sub_res = PrincipalOpenSubset(U_sub, 
+                   pullback(inc_dom_cov[U_sub])(
+                       OOX(U_amb, codomain(inc_dom_cov[U_sub]))(
+                           complement_equation(U)
+                         )
+                     )
+                 )
+
+    pr_res_cov = covering_morphism(pr_res)
+    pr_sub = pr_res_cov[U_sub]
+
+    V_sub = codomain(pr_sub)
+    @assert has_ancestor(x->any(y->y===x, patches(domain(inc_cod_cov))), V_sub)
+    V_sub_inc, comp_eqns = _find_chart(V_sub, domain(inc_cod_cov))
+    OOZ = OO(Z)
+    dummy_dom = codomain(V_sub_inc)
+    dummy_map = inc_cod_cov[dummy_dom]
+    dummy_cod = codomain(dummy_map)
+    V_sub_res = PrincipalOpenSubset(V_sub,
+                                    OOZ(dummy_dom, V_sub)(pullback(dummy_map)(OOY(V_amb, dummy_cod)(complement_equation(V)))))
+    result = restrict(pr_sub, U_sub_res, V_sub_res)
+    # TODO: Obtain the inverse another way?
+    @assert is_isomorphism(result)
+    set_attribute!(pr_res, :isomorphism_on_open_subset, result)
+  end
   return Z_trans, inc_Z_trans, pr_res
 end
 
@@ -481,20 +550,87 @@ end
   inherit_glueings!(cod_cov, default_covering(Y))
   XU = CoveredScheme(dom_cov)
   YV = CoveredScheme(cod_cov)
-  p_res_cov = CoveringMorphism(dom_cov, cod_cov, iso_dict)
+  p_res_cov = CoveringMorphism(dom_cov, cod_cov, iso_dict, check=false)
   p_res = CoveredSchemeMorphism(XU, YV, p_res_cov)
 
   # Assemble the inverse
   iso_inv_dict = IdDict{AbsSpec, AbsSpecMor}()
-  for (U, q) in keys(iso_dict)
+  for (U, q) in iso_dict
     V = codomain(q)
     iso_inv_dict[V] = inverse(q)
   end
-  p_res_inv_cov = CoveringMorphism(cod_cov, dom_cov, iso_inv_dict)
+  p_res_inv_cov = CoveringMorphism(cod_cov, dom_cov, iso_inv_dict, check=false)
   p_res_inv = CoveredSchemeMorphism(YV, XU, p_res_inv_cov)
 
   set_attribute!(p_res, :inverse, p_res_inv)
   set_attribute!(p_res_inv, :inverse, p_res)
   return p_res
+end
+
+### Some functionality used by function fields
+
+# If set this attribute shall return some isomorphism on some open subsets of the domain 
+# and codomain of phi. If both are irreducible, this automatically implies that both are 
+# dense, but we do not check for this.
+@attr AbsSpecMor function isomorphism_on_open_subset(f::BlowupMorphism)
+  X = domain(f)
+  Y = codomain(f)
+  iso_dict = get_attribute(f, :isos_on_complement_of_center)
+  pr_res = first(values(iso_dict))
+  U = domain(pr_res)
+  V = codomain(pr_res)
+  iso_U = _flatten_open_subscheme(U, default_covering(X))
+  U_flat = codomain(iso_U)
+  iso_V = _flatten_open_subscheme(V, default_covering(Y))
+  V_flat = codomain(iso_V)
+  phi = SpecMor(U_flat, V_flat, pullback(inverse(iso_U)).(pullback(pr_res).(pullback(iso_V).(gens(OO(V_flat))))), check=false)
+  phi_inv = SpecMor(V_flat, U_flat, pullback(inverse(iso_V)).(pullback(inverse(pr_res)).(pullback(iso_U).(gens(OO(U_flat))))), check=false)
+  set_attribute!(phi, :inverse, phi_inv)
+  set_attribute!(phi_inv, :inverse, phi)
+  return phi
+end
+
+function pullback(f::BlowupMorphism, g::VarietyFunctionFieldElem)
+  X = domain(projection(f))
+  Y = codomain(projection(f))
+  FX = function_field(X)
+  FY = function_field(Y)
+  phi = isomorphism_on_open_subset(f)
+  U = ambient_scheme(domain(phi))
+  V = ambient_scheme(codomain(phi))
+  parent(g) === FY || error("element does not belong to the correct field")
+  h = g[V]
+  pbg = fraction(pullback(phi)(OO(V)(numerator(h))))//fraction(pullback(phi)(OO(V)(denominator(h))))
+  return FX.(pbg)
+end
+
+function pushforward(f::BlowupMorphism, g::VarietyFunctionFieldElem)
+  X = domain(projection(f))
+  Y = codomain(projection(f))
+  FX = function_field(X)
+  FY = function_field(Y)
+  phi = inverse(isomorphism_on_open_subset(f))
+  U = ambient_scheme(domain(phi))
+  V = ambient_scheme(codomain(phi))
+  parent(g) === FX || error("element does not belong to the correct field")
+  h = g[V]
+  pfg = fraction(pullback(phi)(OO(V)(numerator(h))))//fraction(pullback(phi)(OO(V)(denominator(h))))
+  return FY.(pfg)
+end
+
+@attr AbsSpecMor function isomorphism_on_open_subset(phi::AbsCoveredSchemeMorphism)
+  error("attribute not found; this needs to be set manually in general")
+end
+
+function compose(f::BlowupMorphism, g::BlowupMorphism)
+  return composite_map(f, g)
+end
+
+function compose(f::BlowupMorphism, g::AbsCoveredSchemeMorphism)
+  return composite_map(f, g)
+end
+
+function compose(f::AbsCoveredSchemeMorphism, g::BlowupMorphism)
+  return composite_map(f, g)
 end
 

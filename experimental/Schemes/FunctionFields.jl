@@ -282,6 +282,21 @@ function move_representative(
   iszero(pbb) && error("pullback of denominator is zero")
   # in the next line, A is either a SpecOpen or a PrincipalOpenSubset
   h_generic = generic_fraction(pba, A)//generic_fraction(pbb, A)
+  if domain(f) isa PrincipalOpenSubset
+    fac = factor(lifted_numerator(complement_equation(domain(f))))
+    p = OO(U)(numerator(h_generic))
+    q = OO(U)(denominator(h_generic))
+    for (a, e) in fac
+      aa = OO(U)(a)
+      k_num, _ = _minimal_power_such_that(aa, x->divides(p, x)[1])
+      k_den, _ = _minimal_power_such_that(aa, x->divides(q, x)[1])
+      k = minimum([k_num, k_den])
+      aa = aa^k
+      _, p = divides(p, aa)
+      _, q = divides(q, aa)
+    end
+    h_generic = fraction(p)//fraction(q)
+  end
   return h_generic
 end
 
@@ -487,6 +502,19 @@ function is_regular(f::VarietyFunctionFieldElem, W::SpecOpen)
 end
 
 function pushforward(f::AbsCoveredSchemeMorphism, a::VarietyFunctionFieldElem)
+  X = domain(f)
+  Y = codomain(f)
+  parent(a) === function_field(X) || error("element does not belong to the correct ring")
+  has_attribute(f, :isomorphism_on_open_subset) || error("need an isomorphism on some open subset")
+  f_res = isomorphism_on_open_subset(f)
+  U = domain(f_res)
+  V = codomain(f_res)
+  aa = a[ambient_scheme(U)]
+  f_res_inv = inverse(f_res)
+  num = pullback(f_res_inv)(numerator(aa))
+  den = pullback(f_res_inv)(denominator(aa))
+  #bb = fraction(num)//fraction(den)
+  return function_field(Y)(lifted_numerator(num)*lifted_denominator(den), lifted_numerator(den)*lifted_denominator(num))
 end
 
 function pullback(f::AbsCoveredSchemeMorphism, a::VarietyFunctionFieldElem)

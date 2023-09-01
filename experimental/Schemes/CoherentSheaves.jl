@@ -45,7 +45,11 @@ function Base.show(io::IO, ::MIME"text/plain", M::AbsCoherentSheaf)
   X = scheme(M)
   cov = default_covering(X)
   D = M.ID 
-  println(io, "Coherent sheaf of modules")
+  print(io, "Coherent sheaf of modules")
+  if has_attribute(M, :name)
+    print(io, " ", get_attribute(M, :name))
+  end
+  println(io)
   print(io, Indent(), "on ", Lowercase())
   Oscar._show_semi_compact(io, X, cov)
   if length(cov) > 0
@@ -68,6 +72,8 @@ function Base.show(io::IO, M::AbsCoherentSheaf)
   io = pretty(io)
   if get(io, :supercompact, false)
     print(io, "Presheaf")
+  elseif has_attribute(M, :name)
+    print(io, get_attribute(M, :name))
   else
     if is_unicode_allowed()
       print(io, "Coherent sheaf of $(sheaf_of_rings(M))-modules on ", Lowercase(), scheme(M))
@@ -672,11 +678,11 @@ identifications given by the glueings in the `default_covering`.
 
     Mpre = PreSheafOnScheme(X, production_func, restriction_func,
                       OpenType=AbsSpec, OutputType=ModuleFP,
-                      RestrictionType=Hecke.Map,
+                      RestrictionType=Map,
                       is_open_func=_is_open_func_for_schemes_without_specopen(X)
                       #is_open_func=_is_open_for_modules(X)
                      )
-    M = new{typeof(X), AbsSpec, ModuleFP, Hecke.Map}(MD, OOX, Mpre, default_cov)
+    M = new{typeof(X), AbsSpec, ModuleFP, Map}(MD, OOX, Mpre, default_cov)
     if check
       # Check that all sheaves of modules are compatible on the overlaps.
       # TODO: eventually replace by a check that on every basic
@@ -706,7 +712,7 @@ For a `ProjectiveScheme` ``ℙ`` return the ``d``-th twisting sheaf
 julia> P = projective_space(QQ,3)
 Projective space of dimension 3
   over rational field
-with homogeneous coordinates s0, s1, s2, s3
+with homogeneous coordinates [s0, s1, s2, s3]
 
 julia> twisting_sheaf(P, 4)
 Coherent sheaf of modules
@@ -767,7 +773,7 @@ For a `ProjectiveScheme` ``ℙ`` return the sheaf ``𝒪(-1)`` as a `CoherentShe
 julia> P = projective_space(QQ,3)
 Projective space of dimension 3
   over rational field
-with homogeneous coordinates s0, s1, s2, s3
+with homogeneous coordinates [s0, s1, s2, s3]
 
 julia> tautological_bundle(P)
 Coherent sheaf of modules
@@ -918,10 +924,10 @@ end
       
     Mpre = PreSheafOnScheme(X, production_func, restriction_func,
                       OpenType=AbsSpec, OutputType=ModuleFP,
-                      RestrictionType=Hecke.Map,
+                      RestrictionType=Map,
                       is_open_func=_is_open_func_for_schemes_without_specopen(X)
                      )
-    M = new{typeof(X), AbsSpec, ModuleFP, Hecke.Map}(F, G, OOX, Mpre)
+    M = new{typeof(X), AbsSpec, ModuleFP, Map}(F, G, OOX, Mpre)
 
     return M
   end
@@ -982,10 +988,10 @@ codomain(M::HomSheaf) = M.codomain
       
     Mpre = PreSheafOnScheme(X, production_func, restriction_func,
                       OpenType=AbsSpec, OutputType=ModuleFP,
-                      RestrictionType=Hecke.Map,
+                      RestrictionType=Map,
                       is_open_func=_is_open_func_for_schemes_without_specopen(X)
                      )
-    M = new{typeof(X), AbsSpec, ModuleFP, Hecke.Map}(summands, OOX, Mpre)
+    M = new{typeof(X), AbsSpec, ModuleFP, Map}(summands, OOX, Mpre)
 
     return M
   end
@@ -1103,7 +1109,7 @@ end
   OOX::StructureSheafOfRings
   OOY::StructureSheafOfRings
   M::AbsCoherentSheaf
-  ident::IdDict{AbsSpec, Union{Hecke.Map, Nothing}} # a dictionary caching the identifications
+  ident::IdDict{AbsSpec, Union{Map, Nothing}} # a dictionary caching the identifications
   F::PreSheafOnScheme
 
   function PushforwardSheaf(inc::CoveredClosedEmbedding, M::AbsCoherentSheaf)
@@ -1177,15 +1183,15 @@ end
       return hom(MYV, MYU, (x->preimage(ident[U], x)).(img_gens), OOY(V, U))
     end
     
-    ident = IdDict{AbsSpec, Union{Hecke.Map, Nothing}}()
+    ident = IdDict{AbsSpec, Union{Map, Nothing}}()
 
     Blubber = PreSheafOnScheme(Y, production_func, restriction_func,
                       OpenType=AbsSpec, OutputType=ModuleFP,
-                      RestrictionType=Hecke.Map,
+                      RestrictionType=Map,
                       is_open_func=_is_open_func_for_schemes_without_specopen(Y)
                       #is_open_func=_is_open_for_modules(Y)
                      )
-    MY = new{typeof(Y), AbsSpec, ModuleFP, Hecke.Map}(inc, OOX, OOY, M, ident, Blubber)
+    MY = new{typeof(Y), AbsSpec, ModuleFP, Map}(inc, OOX, OOY, M, ident, Blubber)
     return MY
   end
 end
@@ -1249,7 +1255,7 @@ end
   OOX::StructureSheafOfRings # the sheaf of rings in the domain
   OOY::StructureSheafOfRings # the sheaf of rings in the codomain
   M::AbsCoherentSheaf        # the sheaf of modules on Y
-  pullback_of_sections::IdDict{AbsSpec, Union{Hecke.Map, Nothing}} # a dictionary caching the natural 
+  pullback_of_sections::IdDict{AbsSpec, Union{Map, Nothing}} # a dictionary caching the natural 
                                                                    # pullback maps along the maps in the `covering_morphism` of f 
   F::PreSheafOnScheme        # the internal caching instance doing the bookkeeping
 
@@ -1262,7 +1268,7 @@ end
     fcov = covering_morphism(f)::CoveringMorphism
     CX = domain(fcov)::Covering
     CY = codomain(fcov)::Covering
-    pullbacks = IdDict{AbsSpec, Hecke.Map}()
+    pullbacks = IdDict{AbsSpec, Map}()
 
     ### Production of the modules on open sets.
     #
@@ -1359,14 +1365,14 @@ end
       error("case not implemented")
     end
     
-    ident = IdDict{AbsSpec, Union{Hecke.Map, Nothing}}()
+    ident = IdDict{AbsSpec, Union{Map, Nothing}}()
 
     Blubber = PreSheafOnScheme(X, production_func, restriction_func,
                       OpenType=AbsSpec, OutputType=ModuleFP,
-                      RestrictionType=Hecke.Map,
+                      RestrictionType=Map,
                       is_open_func=_is_open_func_for_schemes_without_specopen(X)
                      )
-    MY = new{typeof(X), AbsSpec, ModuleFP, Hecke.Map}(f, OOX, OOY, M, pullbacks, Blubber)
+    MY = new{typeof(X), AbsSpec, ModuleFP, Map}(f, OOX, OOY, M, pullbacks, Blubber)
     return MY
   end
 end
@@ -1392,7 +1398,7 @@ end
 # with its identification map M' → M. Note that we can not give the 
 # inverse of this map, since there is no well-defined underlying ring 
 # homomorphism.
-function _pushforward(f::Hecke.Map{<:Ring, <:Ring}, I::Ideal, M::FreeMod)
+function _pushforward(f::Map{<:Ring, <:Ring}, I::Ideal, M::FreeMod)
   R = domain(f)
   S = codomain(f)
   base_ring(I) === R || error("ideal is not defined over the correct ring")
@@ -1404,7 +1410,7 @@ function _pushforward(f::Hecke.Map{<:Ring, <:Ring}, I::Ideal, M::FreeMod)
   return MR, ident
 end
 
-function _pushforward(f::Hecke.Map{<:Ring, <:Ring}, I::Ideal, M::SubquoModule)
+function _pushforward(f::Map{<:Ring, <:Ring}, I::Ideal, M::SubquoModule)
   R = domain(f)
   S = codomain(f)
   base_ring(I) === R || error("ideal is not defined over the correct ring")

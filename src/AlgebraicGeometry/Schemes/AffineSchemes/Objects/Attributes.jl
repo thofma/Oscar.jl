@@ -15,7 +15,7 @@ On an affine scheme ``X = Spec(R)``, return the ring ``R``.
 julia> X = affine_space(QQ,3)
 Affine space of dimension 3
   over rational field
-with coordinates x1, x2, x3
+with coordinates [x1, x2, x3]
 
 julia> coordinate_ring(X)
 Multivariate polynomial ring in 3 variables x1, x2, x3
@@ -27,7 +27,7 @@ We allow the shortcut `OO`
 julia> X = affine_space(QQ,3)
 Affine space of dimension 3
   over rational field
-with coordinates x1, x2, x3
+with coordinates [x1, x2, x3]
 
 julia> OO(X)
 Multivariate polynomial ring in 3 variables x1, x2, x3
@@ -67,7 +67,7 @@ its ambient affine space.
 julia> X = affine_space(QQ, [:x,:y])
 Affine space of dimension 2
   over rational field
-with coordinates x, y
+with coordinates [x, y]
 
 julia> ambient_space(X) == X
 true
@@ -207,7 +207,7 @@ Return the embedding of ``X`` in its ambient affine space.
 julia> X = affine_space(QQ, [:x,:y])
 Affine space of dimension 2
   over rational field
-with coordinates x, y
+with coordinates [x, y]
 
 julia> (x, y) = coordinates(X);
 
@@ -245,7 +245,7 @@ See also [`ambient_space(::AbsSpec)`](@ref).
 julia> X = affine_space(QQ, [:x,:y])
 Affine space of dimension 2
   over rational field
-with coordinates x, y
+with coordinates [x, y]
 
 julia> (x,y) = coordinates(X);
 
@@ -276,7 +276,7 @@ See also [`ambient_space(::AbsSpec)`](@ref).
 julia> X = affine_space(QQ, [:x,:y])
 Affine space of dimension 2
   over rational field
-with coordinates x, y
+with coordinates [x, y]
 
 julia> (x,y) = coordinates(X);
 
@@ -309,7 +309,7 @@ by the ambient affine space.
 julia> X = affine_space(QQ, [:x,:y])
 Affine space of dimension 2
   over rational field
-with coordinates x, y
+with coordinates [x, y]
 
 julia> (x, y) = coordinates(X)
 2-element Vector{QQMPolyRingElem}:
@@ -343,7 +343,7 @@ On an affine scheme ``X/𝕜`` over ``𝕜`` this returns the ring ``𝕜``.
 julia> X = affine_space(QQ,3)
 Affine space of dimension 3
   over rational field
-with coordinates x1, x2, x3
+with coordinates [x1, x2, x3]
 
 julia> base_ring(X)
 Rational field
@@ -370,7 +370,7 @@ By definition, this is the Krull dimension of ``R``.
 julia> X = affine_space(QQ,3)
 Affine space of dimension 3
   over rational field
-with coordinates x1, x2, x3
+with coordinates [x1, x2, x3]
 
 julia> dim(X)
 3
@@ -384,6 +384,8 @@ julia> dim(Y) # one dimension comes from ZZ and two from x1 and x2
 3
 ```
 """
+dim(X::AbsSpec)
+
 @attr function dim(X::AbsSpec{<:Ring, <:MPolyQuoLocRing})
   return dim(saturated_ideal(modulus(OO(X))))
 end
@@ -415,7 +417,7 @@ Throws and error if ``X`` does not have an ambient affine space.
 julia> X = affine_space(QQ,3)
 Affine space of dimension 3
   over rational field
-with coordinates x1, x2, x3
+with coordinates [x1, x2, x3]
 
 julia> codim(X)
 0
@@ -457,7 +459,7 @@ This name can be specified via `set_name!`.
 julia> X = affine_space(QQ, 3)
 Affine space of dimension 3
   over rational field
-with coordinates x1, x2, x3
+with coordinates [x1, x2, x3]
 
 julia> name(X)
 "unnamed affine variety"
@@ -779,7 +781,7 @@ Return the defining ideal of the closure of ``X`` in its ambient affine space.
 julia> X = affine_space(QQ,3)
 Affine space of dimension 3
   over rational field
-with coordinates x1, x2, x3
+with coordinates [x1, x2, x3]
 
 julia> R = OO(X)
 Multivariate polynomial ring in 3 variables x1, x2, x3

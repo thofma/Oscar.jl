@@ -395,7 +395,7 @@ function blow_up_chart(W::AbsSpec{<:Field, <:MPolyRing}, I::MPolyIdeal;
       W === codomain(p_res) || error("codomain not correct")
       ID[affine_charts(Y)[i]] = pullback(p_res)(gen(I, i))
     end
-    E = oscar.EffectiveCartierDivisor(Y, ID, trivializing_covering=domain(p_cov), check=false)
+    E = Oscar.EffectiveCartierDivisor(Y, ID, trivializing_covering=domain(p_cov), check=false)
     set_attribute!(Y, :exceptional_divisor, E)
     set_attribute!(IPY, :exceptional_divisor, E)
 
@@ -446,7 +446,7 @@ function blow_up_chart(W::AbsSpec{<:Field, <:MPolyRing}, I::MPolyIdeal;
       W === codomain(p_res) || error("codomain not correct")
       ID[affine_charts(Y)[i]] = pullback(p_res)(gen(I, i))
     end
-    E = oscar.EffectiveCartierDivisor(Y, ID, trivializing_covering=domain(p_cov), check=false) 
+    E = Oscar.EffectiveCartierDivisor(Y, ID, trivializing_covering=domain(p_cov), check=false) 
     set_attribute!(Y, :exceptional_divisor, E)
     set_attribute!(IPY, :exceptional_divisor, E)
     # Cache the isomorphism on the complement of the center
@@ -500,7 +500,7 @@ function blow_up_chart(W::AbsSpec{<:Field, <:RingType}, I::Ideal;
     W === codomain(p_res) || error("codomain not correct")
     ID[affine_charts(Y)[i]] = pullback(p_res)(gen(I, i))
   end
-  E = oscar.EffectiveCartierDivisor(Y, ID, trivializing_covering=domain(p_cov), check=false)
+  E = Oscar.EffectiveCartierDivisor(Y, ID, trivializing_covering=domain(p_cov), check=false)
   set_attribute!(Y, :exceptional_divisor, E)
   set_attribute!(Bl_W, :exceptional_divisor, E)
   
@@ -742,8 +742,10 @@ function _compute_projective_glueing(gd::CoveredProjectiveGlueingData)
   # bⱼᵢ the coefficients for gⱼ = ∑ᵢ bⱼᵢ⋅fᵢ in UV
   # sᵢ the variables for the homogeneous ring over U
   # tⱼ the variables for the homogenesous ring over V
-  A = [coordinates(OX(U, VU)(f), I(VU)) for f in gens(I(U))] # A[i][j] = aᵢⱼ
-  B = [coordinates(OX(V, UV)(g), I(UV)) for g in gens(I(V))] # B[j][i] = bⱼᵢ
+  #A = [coordinates(OX(U, VU)(f), I(VU)) for f in gens(I(U))] # A[i][j] = aᵢⱼ
+  A = [coordinates(OX(U, VU)(f), ideal(OO(VU), OX(V, VU).(gens(I(V))))) for f in gens(I(U))] # A[i][j] = aᵢⱼ
+  #B = [coordinates(OX(V, UV)(g), I(UV)) for g in gens(I(V))] # B[j][i] = bⱼᵢ
+  B = [coordinates(OX(V, UV)(g), ideal(OO(UV), OX(U, UV).(gens(I(U))))) for g in gens(I(V))] # B[j][i] = bⱼᵢ
   SQVU = homogeneous_coordinate_ring(QVU)
   SPUV = homogeneous_coordinate_ring(PUV)
   # the induced map is ℙ(UV) → ℙ(VU), tⱼ ↦ ∑ᵢ bⱼᵢ ⋅ sᵢ 
@@ -792,7 +794,7 @@ function blow_up(
     # Gather the information on the isomorphism on the complement
     p = covered_projection_to_base(local_blowups[U])
     isos_on_complement_of_center = get_attribute(p, :isos_on_complement_of_center)::IdDict{<:AbsSpec, <:AbsSpecMor}
-    # manual merge becaus `merge` does not preserve IdDicts.
+    # manual merge because `merge` does not preserve IdDicts.
     for x in keys(isos_on_complement_of_center)
       comp_iso_dict[x] = isos_on_complement_of_center[x]
     end

@@ -35,8 +35,8 @@ function Base.show(io::IO, ::MIME"text/plain", P::AbsProjectiveScheme{<:Any, <:M
   println(io, Lowercase(), base_ring(P))
   print(io, Dedent(), "with homogeneous coordinate")
   length(homogeneous_coordinates(P)) > 1 && print(io, "s")
-  print(io, " ")
-  print(io, join(homogeneous_coordinates(P), ", "))
+  print(io, " [")
+  print(io, join(homogeneous_coordinates(P), ", "), "]")
 end
 
 function Base.show(io::IO, P::AbsProjectiveScheme{<:Any, <:MPolyDecRing})
@@ -80,8 +80,8 @@ function Base.show(io::IO, P::AbsProjectiveScheme{<:Any, <:MPolyDecRing})
       c = homogeneous_coordinates(P)
       print(io, " with coordinate")
       length(c) > 1 && print(io, "s")
-      print(io, " ")
-      print(io, join(c, ", "))
+      print(io, " [")
+      print(io, join(c, ", "), "]")
     end
   end
 end
@@ -97,7 +97,7 @@ Return the restriction morphism from the graded coordinate ring of ``X`` to `ð’
 julia> P = projective_space(QQ, ["x0", "x1", "x2"])
 Projective space of dimension 2
   over rational field
-with homogeneous coordinates x0, x1, x2
+with homogeneous coordinates [x0, x1, x2]
 
 julia> X = covered_scheme(P);
 
@@ -201,7 +201,7 @@ one of the homogeneous coordinates of ``P``.
 
 **Note:** Since this map returns representatives only, it 
 is not a mathematical morphism and, hence, in particular 
-not an instance of `Hecke.Map`.
+not an instance of `Map`.
 
 # Examples
 ```jldoctest
@@ -210,7 +210,7 @@ julia> A, _ = QQ["u", "v"];
 julia> P = projective_space(A, ["x0", "x1", "x2"])
 Projective space of dimension 2
   over multivariate polynomial ring in 2 variables over QQ
-with homogeneous coordinates x0, x1, x2
+with homogeneous coordinates [x0, x1, x2]
 
 julia> X = covered_scheme(P)
 Scheme
@@ -372,4 +372,30 @@ function getindex(X::AbsProjectiveScheme, U::AbsSpec)
   return nothing, 0
 end
 
+# comparison of projective spaces
+function ==(X::AbsProjectiveScheme{<:Any,<:MPolyDecRing}, Y::AbsProjectiveScheme{<:Any,<:MPolyDecRing})
+  return homogeneous_coordinate_ring(X) === homogeneous_coordinate_ring(Y)
+end
 
+# comparison of subschemes of projective space
+function ==(X::AbsProjectiveScheme, Y::AbsProjectiveScheme)
+  ambient_space(X) == ambient_space(Y) || return false
+  IX = defining_ideal(X)
+  IY = defining_ideal(Y)
+  R = homogeneous_coordinate_ring(ambient_space(X))
+  irrelevant_ideal = ideal(R,gens(R))
+  IXsat = saturation(IX, irrelevant_ideal)
+  IYsat = saturation(IY, irrelevant_ideal)
+  return IXsat == IYsat
+end
+
+function issubset(X::AbsProjectiveScheme, Y::AbsProjectiveScheme)
+  ambient_space(X) == ambient_space(Y) || return false
+  IX = defining_ideal(X)
+  IY = defining_ideal(Y)
+  R = homogeneous_coordinate_ring(ambient_space(X))
+  irrelevant_ideal = ideal(R,gens(R))
+  IXsat = saturation(IX, irrelevant_ideal)
+  IYsat = saturation(IX, irrelevant_ideal)
+  return issubset(IYsat, IXsat)
+end

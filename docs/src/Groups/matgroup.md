@@ -8,7 +8,7 @@ end
 # Matrix groups
 
 ```@docs
-matrix_group(m::Int, R::Ring, V::AbstractVector{T}; check::Bool=true) where T<:Union{MatElem,MatrixGroupElem}
+matrix_group(R::Ring, m::Int, V::AbstractVector{T}; check::Bool=true) where T<:Union{MatElem,MatrixGroupElem}
 MatrixGroup{RE<:RingElem, T<:MatElem{RE}}
 MatrixGroupElem{RE<:RingElem, T<:MatElem{RE}}
 base_ring(G::MatrixGroup)
@@ -83,7 +83,7 @@ lower_triangular_matrix(L)
 conjugate_transpose(x::MatElem{T}) where T <: FinFieldElem
 complement(V::AbstractAlgebra.Generic.FreeModule{T}, W::AbstractAlgebra.Generic.Submodule{T}) where T <: FieldElem
 permutation_matrix(F::Ring, Q::AbstractVector{<:IntegerUnion})
-is_skewsymmetric_matrix(B::MatElem{T}) where T <: RingElem
+is_alternating(B::MatElem)
 is_hermitian(B::MatElem{T}) where T <: FinFieldElem
 ```
 
