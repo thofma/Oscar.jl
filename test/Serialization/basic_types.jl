@@ -1,7 +1,14 @@
+using JSON, JSONSchema
+
 function test_save_load_roundtrip(func, path, original::T; params=nothing) where T
   # save and load from a file
   filename = joinpath(path, "original.json")
   save(filename, original)
+
+  mrdi_schema = Schema(JSON.parsefile(joinpath(@__DIR__,"mrdi.json")))
+  jsondict = JSON.parsefile(filename)
+  @test isnothing(validate(mrdi_schema, jsondict))
+  
   loaded = load(filename; params=params)
   if T <: Vector
     @test loaded isa Vector
