@@ -35,7 +35,6 @@ The assumptions are as follows:
 mutable struct BorcherdsCtx
   L::ZZLat
   S::ZZLat
-  N::ZZLat
   weyl_vector::ZZMatrix # given in the basis of L
   SS::ZZLat
   R::ZZLat
@@ -164,7 +163,7 @@ function BorcherdsCtx(L::ZZLat, S::ZZLat, weyl, compute_OR::Bool=true)
   deltaR = [change_base_ring(ZZ, matrix(QQ, 1, rkR, v[1])*basis_matrix(R)) for v in short_vectors(rescale(R,-1),2)]
   dualDeltaR = [gramL*transpose(r) for r in deltaR]
   return BorcherdsCtx(L, S, weyl, SS, R, deltaR, dualDeltaR, prRdelta, membership_test,
-                      gramL, gramS, prS, compute_OR)
+                      gramL, gramS, prS, identity_matrix(QQ,rank(S)),compute_OR)
 end
 
 ################################################################################
