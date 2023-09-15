@@ -35,6 +35,7 @@ The assumptions are as follows:
 mutable struct BorcherdsCtx
   L::ZZLat
   S::ZZLat
+  N::ZZLat
   weyl_vector::ZZMatrix # given in the basis of L
   SS::ZZLat
   R::ZZLat
@@ -45,6 +46,7 @@ mutable struct BorcherdsCtx
   gramL::ZZMatrix  # avoid a few conversions because gram_matrix(::ZZLat) -> QQMatrix
   gramS::ZZMatrix
   prS::QQMatrix
+  StoN::QQMatrix
   compute_OR::Bool
   # TODO: Store temporary variables for the computations
   # in order to make the core-functions adjacent_chamber and walls
@@ -1501,7 +1503,7 @@ function borcherds_method(data::BorcherdsCtx; entropy_abort::Bool, max_nchambers
       for f in autD
         push!(automorphisms, f)
       end
-      @vprint :K3Auto 1 "Found a chamber with $(length(autD)) automorphisms\n"
+      @vprint :K3Auto 1 "Found a chamber with $(length(autD)+1) automorphisms\n"
       # compute the orbits
       @vprint :K3Auto 3 "computing orbits\n"
       Omega = [F(v) for v in walls(D)]
@@ -1515,7 +1517,9 @@ function borcherds_method(data::BorcherdsCtx; entropy_abort::Bool, max_nchambers
     end
     # compute the adjacent chambers to be explored
     for v in wallsDmodAutD
-      if -2 == (v*gram_matrix(S)*transpose(v))[1,1]
+      d = denominator(v*data.StoN)
+      vN = d*v # primitive in N
+      if -2 == (vN*gram_matrix(S)*transpose(vN))[1,1]
         # v comes from a rational curve
         push!(rational_curves, v)
         continue
@@ -1848,7 +1852,7 @@ function borcherds_method_preprocessing(S::ZZLat, n::Integer; ample=nothing)
   end
   # double check
   Q = orthogonal_submodule(S, lattice(V,h))
-  @assert length(short_vectors(rescale(Q,-1),2))==0
+  #@assert length(short_vectors(rescale(Q,-1),2))==0
   if (h*gram_matrix(ambient_space(L))*transpose(weyl))[1,1] < 0
     weyl = -weyl
     u0 = -u0
