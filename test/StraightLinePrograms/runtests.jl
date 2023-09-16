@@ -4,9 +4,10 @@ using ..Test
 using ..Oscar
 const SLP = Oscar.StraightLinePrograms
 
-include("setup.jl")
-include("straightline.jl")
-include("gap.jl")
-include("atlas.jl")
+# make sure to use the custom include function to collect stats
+Main.include("setup.jl")
+Main.include("straightline.jl")
+Main.include("gap.jl")
+Main.include("atlas.jl")
 
 end

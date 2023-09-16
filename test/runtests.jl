@@ -50,6 +50,7 @@ end
 @everywhere const compiletimes = @static VERSION >= v"1.9.0-DEV" ? true : false
 
 @everywhere const stats_dict = Dict{String,NamedTuple}()
+@everywhere const included_files = Set{String}()
 
 function print_stats(io::IO; fmt=PrettyTables.tf_unicode, max=50)
   sorted = sort(collect(stats_dict), by=x->x[2].time, rev=true)
@@ -71,6 +72,7 @@ end
 @everywhere const innermost = Ref(true)
 # redefine include to print and collect some extra stats
 @everywhere function include(str::String)
+  push!(included_files, joinpath(Base.source_dir(), str))
   innermost[] = true
   # we pass the identity to avoid recursing into this function again
   @static if compiletimes
@@ -153,6 +155,38 @@ if numprocs == 1
     end
   else
     print_stats(stdout; max=10)
+  end
+
+
+  # We want to make sure all files in the test folders are actually executed
+  # this works only when running without workers
+
+  # add main runtests manually since it doesn't use our custom include
+  push!(included_files, joinpath(Oscar.oscardir, "test", "runtests.jl"))
+
+  ignoretests = ["Modules/GradedModules.jl", "Modules/FreeModules-graded.jl"]
+  ignorepaths = joinpath.(Oscar.oscardir, "test", ignoretests)
+
+  # this triggers an error only on github to avoid errors with unfinished files
+  # or when commenting parts of the testsuite locally for testing
+  fail_missing_include = haskey(ENV, "GITHUB_ACTIONS")
+  @testset "check included test files" begin
+    # empty entry is for main Oscar test directory
+    for pkgdir in ["", joinpath.("experimental", Oscar.exppkgs)...]
+      testdir = joinpath(Oscar.oscardir, pkgdir, "test")
+      # we ignore experimental pkgs that don't follow the new layout
+      isdir(testdir) || continue
+      for (root, dirs, files) in walkdir(testdir)
+        for file in filter(endswith(".jl"), files)
+          filepath = joinpath(root, file)
+          if fail_missing_include && !(filepath in ignorepaths)
+            @test filepath in included_files
+          else
+            filepath in included_files || @warn "Test file '$filepath' not included!"
+          end
+        end
+      end
+    end
   end
 end
 
