@@ -39,3 +39,5 @@ include("binomial-ideals.jl")
 include("hilbert.jl")
 
 include("ReesAlgebra.jl")
+
+include("special_ideals.jl")
