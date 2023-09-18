@@ -71,14 +71,14 @@ end
 # include other files
 @everywhere const innermost = Ref(true)
 # redefine include to print and collect some extra stats
-@everywhere function include(str::String)
+@everywhere function include(str::String, mod::Module=Main)
   push!(included_files, joinpath(Base.source_dir(), str))
   innermost[] = true
   # we pass the identity to avoid recursing into this function again
   @static if compiletimes
     compile_elapsedtimes = Base.cumulative_compile_time_ns()
   end
-  stats = @timed Base.include(identity, Main, str)
+  stats = @timed Base.include(identity, mod, str)
   # skip files which just include other files and ignore
   # files outside of the oscar folder
   if innermost[] && !isabspath(str)
