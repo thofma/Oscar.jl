@@ -1066,3 +1066,10 @@ function is_minor(Minor::Matroid, M::Matroid)
     end
     return false
 end
+
+
+@doc raw"""
+    matroid_plueckervector(M::Matroid)
+"""
+matroid_plueckervector(M::MatroidTypes) = convert(Vector{Int}, Polymake.matroid.matroid_plueckervector(pm_object(M)))
+export matroid_plueckervector
