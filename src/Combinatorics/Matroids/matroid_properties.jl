@@ -1073,3 +1073,11 @@ end
 """
 matroid_plueckervector(M::MatroidTypes) = convert(Vector{Int}, Polymake.matroid.matroid_plueckervector(pm_object(M)))
 export matroid_plueckervector
+
+@doc raw"""
+    matroid_polytope(M::Matroid)
+
+Construct the matroid polytope.
+"""
+matroid_polytope(M::MatroidTypes) = Polyhedron(pm_object(M).POLYTOPE)
+export matroid_polytope
