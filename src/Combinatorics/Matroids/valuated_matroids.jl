@@ -50,7 +50,7 @@ valuated_matroid_from_bases(
   valuated_matroid_from_bases(bases, Vector(1:nelements), valuation, addition; check=check)
 export valuated_matroid_from_bases
 
-function matroid_from_circuits(
+function valuated_matroid_from_circuits(
   circuits::Union{AbstractVector{T},AbstractSet{T}},
   groundset::GroundsetType,
   valuation,
