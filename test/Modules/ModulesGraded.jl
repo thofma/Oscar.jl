@@ -918,13 +918,13 @@ end
     @test is_graded(prod_N)
     @test ngens(prod_M) == ngens(M1) + ngens(M2)
     for g in gens(prod_N)
-      @test g == sum([Hecke.canonical_injection(prod_N,i)(Hecke.canonical_projection(prod_N,i)(g)) for i=1:2])
+        @test g == sum([canonical_injection(prod_N,i)(canonical_projection(prod_N,i)(g)) for i=1:2])
     end
     for g in gens(N1)
-      @test g == Hecke.canonical_projection(prod_N,1)(Hecke.canonical_injection(prod_N,1)(g))
+        @test g == canonical_projection(prod_N,1)(canonical_injection(prod_N,1)(g))
     end
     for g in gens(N2)
-      @test g == Hecke.canonical_projection(prod_N,2)(Hecke.canonical_injection(prod_N,2)(g))
+        @test g == canonical_projection(prod_N,2)(canonical_injection(prod_N,2)(g))
     end
 
     M1_to_N1 = SubQuoHom(M1,N1,zero_matrix(Rg,3,3))
@@ -948,12 +948,12 @@ end
     phi = hom_product(prod_M,prod_N,[M1_to_N1 M1_to_N2; M2_to_N1 M2_to_N2])
     @test degree(phi) == 6*Z[1]
     for g in gens(M1)
-      @test M1_to_N1(g) == Hecke.canonical_projection(prod_N,1)(phi(emb[1](g)))
-      @test M1_to_N2(g) == Hecke.canonical_projection(prod_N,2)(phi(emb[1](g)))
+        @test M1_to_N1(g) == canonical_projection(prod_N,1)(phi(emb[1](g)))
+        @test M1_to_N2(g) == canonical_projection(prod_N,2)(phi(emb[1](g)))
     end
     for g in gens(M2)
-      @test M2_to_N1(g) == Hecke.canonical_projection(prod_N,1)(phi(emb[2](g)))
-      @test M2_to_N2(g) == Hecke.canonical_projection(prod_N,2)(phi(emb[2](g)))
+        @test M2_to_N1(g) == canonical_projection(prod_N,1)(phi(emb[2](g)))
+        @test M2_to_N2(g) == canonical_projection(prod_N,2)(phi(emb[2](g)))
     end
     prod_FN,prod,emb = direct_product(F2,N2,task=:both)
     @test is_graded(prod_FN)
@@ -1118,9 +1118,9 @@ end
   # To reproduce the string on the right hand side, evaluate 
   #   `"$(Oscar.minimal_betti_table(M))"` 
   # and insert the result here; after verification of the result!
-  @test "$(Oscar.minimal_betti_table(A))" == "       0  1  2  3  4\n---------------------\n0    : 1  -  -  -  -\n1    : -  -  -  -  -\n2    : -  7  10 5  1\n---------------------\ntotal: 1  7  10 5  1\n"
+  @test "$(Oscar.minimal_betti_table(A))" == "       0  1  2   3  4\n----------------------\n0    : 1  -  -   -  -\n1    : -  -  -   -  -\n2    : -  7  10  5  1\n----------------------\ntotal: 1  7  10  5  1\n"
 
-  @test "$(Oscar.minimal_betti_table(M))" == "       0  1  2  3  4\n---------------------\n0    : 1  -  -  -  -\n1    : -  -  -  -  -\n2    : -  7  10 5  1\n---------------------\ntotal: 1  7  10 5  1\n"
+  @test "$(Oscar.minimal_betti_table(M))" == "       0  1  2   3  4\n----------------------\n0    : 1  -  -   -  -\n1    : -  -  -   -  -\n2    : -  7  10  5  1\n----------------------\ntotal: 1  7  10  5  1\n"
 
   @test "$(Oscar.minimal_betti_table(I))" == "$(Oscar.minimal_betti_table(sub_F))"
 
@@ -1138,3 +1138,41 @@ end
   A, _ = quo(R, I)
   @test "$(Oscar.minimal_betti_table(free_resolution(A)))" == "       0  1  2  3\n------------------\n0    : 1  -  -  -\n1    : -  5  5  -\n2    : -  -  -  1\n------------------\ntotal: 1  5  5  1\n"
 end
+
+@testset "sheaf cohomology" begin
+  R, x = polynomial_ring(QQ, "x" => 1:4)
+  S, _ = grade(R)
+  I = ideal(S, gens(S))
+  FI = free_resolution(I)
+  M = cokernel(map(FI, 2))
+  tbl = sheaf_cohomology_bgg(M, -6, 2)
+  @test tbl[0, -6] == 70
+  @test tbl[2, 0] == 1
+  @test iszero(tbl[2, -2])
+
+  F = free_module(S, 1)
+  @test_throws AssertionError sheaf_cohomology_bgg(F, -6, 2)
+
+  R, x = polynomial_ring(QQ, "x" => 1:4)
+  S, _ = grade(R, [1,2,3,4])
+  F = graded_free_module(S, 1)
+  @test_throws AssertionError sheaf_cohomology_bgg(F, -6, 2)
+
+  R, x = polynomial_ring(QQ, "x" => 1:5)
+  S, _ = grade(R)
+  F = graded_free_module(S, 1)
+  tbl = sheaf_cohomology_bgg(F, -7, 2)
+  a = tbl.values
+  b = transpose(a) * a
+  @test is_symmetric(b)
+end
+
+@testset "twist" begin
+  R, (x, y) = graded_polynomial_ring(QQ, ["x", "y"], [1 0; 0 1]);
+  I = ideal(R, [x, y])
+  M = quotient_ring_as_module(I)
+  N = twist(M, [1, 2])
+  @test Int(degree(gen(N, 1))[1]) == -1
+  @test Int(degree(gen(N, 1))[2]) == -2
+end
+

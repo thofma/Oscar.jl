@@ -2,11 +2,22 @@
 # 1: The Julia type for ToricMorphisms
 ####################################################
 
-@attributes mutable struct ToricMorphism
-    domain::NormalToricVarietyType
-    grid_morphism::GrpAbFinGenMap
-    codomain::NormalToricVarietyType
-    ToricMorphism(domain, grid_morphism, codomain) = new(domain, grid_morphism, codomain)
+@attributes mutable struct ToricMorphism{
+    DomainType<:AbsCoveredScheme,
+    CodomainType<:AbsCoveredScheme,
+    BaseMorphismType
+   } <: AbsCoveredSchemeMorphism{
+                                 DomainType,
+                                 CodomainType,
+                                 BaseMorphismType,
+                                 ToricMorphism
+                                }
+  domain::NormalToricVarietyType
+  grid_morphism::GrpAbFinGenMap
+  codomain::NormalToricVarietyType
+  function ToricMorphism(domain, grid_morphism, codomain)
+    result = new{typeof(domain), typeof(codomain), Nothing}(domain, grid_morphism, codomain)
+  end
 end
 
 
@@ -85,13 +96,7 @@ julia> mapping_matrix = matrix(ZZ, [[0, 1]])
 [0   1]
 
 julia> grid_morphism = hom(character_lattice(domain), character_lattice(codomain), mapping_matrix)
-Map with following data
-Domain:
-=======
-Abelian group with structure: Z
-Codomain:
-=========
-Abelian group with structure: Z^2
+Map: GrpAb: Z -> GrpAb: Z^2
 
 julia> toric_morphism(domain, grid_morphism, codomain)
 A toric morphism
@@ -202,3 +207,5 @@ end
 function Base.show(io::IO, tm::ToricMorphism)
     join(io, "A toric morphism")
 end
+
+Base.show(io::IO, ::MIME"text/plain", tm::ToricMorphism) = Base.show(pretty(io), tm)

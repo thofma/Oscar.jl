@@ -58,10 +58,9 @@ function vector_space_dimension(A::MPolyQuoRing)
     error("vector_space_dimension requires a coefficient ring that is a field")
   end
   I = A.I
-  G = groebner_assure(I)
+  G = standard_basis(I)
   @req dim(I) == 0 "The ideal must be zero-dimensional"
-  singular_assure(G)
-  return Singular.vdim(G.S)
+  return Singular.vdim(singular_generators(G, G.ord))
 end
 
 @doc raw"""
@@ -80,8 +79,7 @@ julia> I = ideal(R, [x^2, y^3])
 ideal(x^2, y^3)
 
 julia> A, _ = quo(R, I)
-(Quotient of multivariate polynomial ring by ideal with 2 generators, Map from
-R to A defined by a julia-function with inverse)
+(Quotient of multivariate polynomial ring by ideal(x^2, y^3), Map: graded multivariate polynomial ring -> quotient of multivariate polynomial ring)
 
 julia> L = monomial_basis(A)
 6-element Vector{MPolyDecRingElem{QQFieldElem, QQMPolyRingElem}}:
@@ -96,10 +94,9 @@ julia> L = monomial_basis(A)
 function monomial_basis(A::MPolyQuoRing)
   @req coefficient_ring(A) isa AbstractAlgebra.Field "The coefficient ring must be a field"
   I = A.I
-  G = Oscar.groebner_assure(I)
+  G = standard_basis(I)
   @req dim(I) == 0 "The ideal must be zero-dimensional"
-  singular_assure(G)
-  si = Singular.kbase(G.S)
+  si = Singular.kbase(singular_generators(G, G.ord))
   return gens(MPolyIdeal(base_ring(I), si))
 end
 
@@ -135,8 +132,7 @@ julia> I = ideal(R, [x^2])
 ideal(x^2)
 
 julia> A, _ = quo(R, I)
-(Quotient of multivariate polynomial ring by ideal with 1 generator, Map from
-R to A defined by a julia-function with inverse)
+(Quotient of multivariate polynomial ring by ideal(x^2), Map: graded multivariate polynomial ring -> quotient of multivariate polynomial ring)
 
 julia> L = monomial_basis(A, 3)
 2-element Vector{MPolyDecRingElem{QQFieldElem, QQMPolyRingElem}}:
@@ -497,11 +493,8 @@ julia> H[2][1]
 GrpAb: Z^2
 
 julia> H[2][2]
-Identity map with
-
-Domain:
-=======
-GrpAb: Z^2
+Identity map
+  of GrpAb: Z^2
 
 julia> G = abelian_group(ZZMatrix([1 -1]));
 
@@ -526,13 +519,9 @@ julia> H
 GrpAb: Z
 
 julia> iso
-Map with following data
-Domain:
-=======
-H
-Codomain:
-=========
-G
+Map: GrpAb: Z -> (General) abelian group with relation matrix
+[1 -1]
+with structure of GrpAb: Z
 ```
 """
 function multi_hilbert_series(
@@ -697,11 +686,8 @@ julia> H[2][1]
 GrpAb: Z^2
 
 julia> H[2][2]
-Identity map with
-
-Domain:
-=======
-GrpAb: Z^2
+Identity map
+  of GrpAb: Z^2
 
 julia> G = abelian_group(ZZMatrix([1 -1]));
 
@@ -726,13 +712,9 @@ julia> H[2][1]
 GrpAb: Z
 
 julia> H[2][2]
-Map with following data
-Domain:
-=======
-Abelian group with structure: Z
-Codomain:
-=========
-G
+Map: GrpAb: Z -> (General) abelian group with relation matrix
+[1 -1]
+with structure of GrpAb: Z
 ```
 """
 function multi_hilbert_series_reduced(A::MPolyQuoRing; algorithm::Symbol=:BayerStillmanA)
@@ -906,11 +888,10 @@ function is_normal(A::MPolyQuoRing)
   @req !(base_ring(A) isa MPolyDecRing) "Not implemented for quotients of decorated rings"
 
   I = A.I
-  singular_assure(I)
   # TODO remove old1 & old2 once new Singular jll is out
   old1 = Singular.libSingular.set_option("OPT_REDSB", false)
   old2 = Singular.libSingular.set_option("OPT_RETURN_SB", false)
-  f = Singular.LibNormal.isNormal(I.gens.S)::Int
+  f = Singular.LibNormal.isNormal(singular_generators(I))::Int
   Singular.libSingular.set_option("OPT_REDSB", old1)
   Singular.libSingular.set_option("OPT_RETURN_SB", old2)
   return Bool(f)
@@ -1050,9 +1031,9 @@ function _subalgebra_membership_homogeneous(f::PolyRingElemT, v::Vector{PolyRing
   # This computes the normal form of f w.r.t. the truncated Gröbner basis GJ.
   # Since we have a product ordering, we cannot use divrem, and since GJ is
   # "not really" a Gröbner basis, we cannot use normal_form...
-  singular_assure(GJ)
-  I = Singular.Ideal(GJ.Sx, GJ.Sx(RtoT(f)))
-  K = ideal(T, reduce(I, GJ.S))
+  SR = singular_polynomial_ring(GJ)
+  I = Singular.Ideal(SR, SR(RtoT(f)))
+  K = ideal(T, reduce(I, singular_generators(GJ, GJ.ord)))
   @assert is_one(ngens(K.gens.S))
   nf = GJ.Ox(K.gens.S[1])
   ###
@@ -1068,6 +1049,50 @@ function _subalgebra_membership_homogeneous(f::PolyRingElemT, v::Vector{PolyRing
   else
     return false, zero(S)
   end
+end
+
+################################################################################
+#
+#  Algebraic Independence
+#
+################################################################################
+
+@doc raw"""
+    are_algebraically_independent(V::Vector{T}) where T <: Union{MPolyRingElem, MPolyQuoRingElem}
+
+Given a vector `V` of elements of a multivariate polynomial ring over a field `K`, say, or of a quotient of such a ring, 
+return `(true, ideal(0))` if the elements of `V` are algebraically independent over `K`. Return, `false`
+together with the ideal of `K`-algebra relations, otherwise.
+
+# Examples
+```jldoctest
+julia> R, (x, y) = polynomial_ring(QQ, ["x", "y"]);
+
+julia> V = [x, y, x^2+y^3]
+3-element Vector{QQMPolyRingElem}:
+ x
+ y
+ x^2 + y^3
+
+julia> are_algebraically_independent(V)
+(false, ideal(t1^2 + t2^3 - t3))
+
+julia> A, p = quo(R, [x*y]);
+
+julia> are_algebraically_independent([p(x), p(y)])
+(false, ideal(t1*t2))
+
+```
+"""
+function are_algebraically_independent(V::Vector{T}) where T <: Union{MPolyRingElem, MPolyQuoRingElem}
+  @req !isempty(V) "Input vector must not be empty"
+  R = parent(V[1])
+  @req coefficient_ring(R) isa Field "The coefficient ring must be a field"
+  @req all(x -> parent(x) === R, V) "The elements must have the same parent"
+  S, _ = polynomial_ring(coefficient_ring(R), length(V), "t"; cached = false)
+  phi = hom(S, R, V)
+  I = kernel(phi)
+  return iszero(I), I
 end
 
 ################################################################################
@@ -1263,13 +1288,14 @@ julia> size(LL)
 
 julia> LL[1][1]
 Quotient
-  of multivariate polynomial ring in 3 variables over QQ
+  of multivariate polynomial ring in 3 variables T(1), x, y
+    over rational field
   by ideal(-T(1)*y + x, -T(1)*x + y^2, T(1)^2 - y, -x^2 + y^3)
 
 julia> LL[1][2]
 Ring homomorphism
-  from quotient of multivariate polynomial ring by ideal with 1 generator
-  to quotient of multivariate polynomial ring by ideal with 4 generators
+  from quotient of multivariate polynomial ring by ideal(x^5 - x^3*y^3 + x^3*y^2 - x*y^5)
+  to quotient of multivariate polynomial ring by ideal(-T(1)*y + x, -T(1)*x + y^2, T(1)^2 - y, -x^2 + y^3)
 defined by
   x -> x
   y -> y
@@ -1284,8 +1310,7 @@ function normalization(A::MPolyQuoRing; algorithm=:equidimDec)
 
   I = A.I
   br = base_ring(base_ring(A))
-  singular_assure(I)
-  l = Singular.LibNormal.normal(I.gens.S, _conv_normalize_alg(algorithm))
+  l = Singular.LibNormal.normal(singular_generators(I), _conv_normalize_alg(algorithm))
   return _conv_normalize_data(A, l, br)
 end
 
@@ -1342,8 +1367,7 @@ function normalization_with_delta(A::MPolyQuoRing; algorithm::Symbol=:equidimDec
 
   I = A.I
   br = base_ring(base_ring(A))
-  singular_assure(I)
-  l = Singular.LibNormal.normal(I.gens.S, _conv_normalize_alg(algorithm), "withDelta")
+  l = Singular.LibNormal.normal(singular_generators(I), _conv_normalize_alg(algorithm), "withDelta")
   return (_conv_normalize_data(A, l, br), l[3][1]::Vector{Int}, l[3][2]::Int)
 end
 
@@ -1374,8 +1398,7 @@ function noether_normalization(A::MPolyQuoRing)
 
  I = A.I
  R = base_ring(I)
- singular_assure(I)
- l = Singular.LibAlgebra.noetherNormal(I.gens.S)
+ l = Singular.LibAlgebra.noetherNormal(singular_generators(I))
  i1 = [R(x) for x = gens(l[1])]
  i2 = [R(x) for x = gens(l[2])]
  m = matrix([[coeff(x, y) for y = gens(R)] for x = i1])

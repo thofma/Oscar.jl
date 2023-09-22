@@ -213,7 +213,9 @@ function Base.show(io::IO, ::MIME"text/plain", L::MPolyQuoLocRing)
   io = pretty(io)
   println(io, "Localization")
   print(io, Indent())
-  println(io, "of ", Lowercase(), underlying_quotient(L))
+  print(io, "of ", Lowercase())
+  show(io, MIME("text/plain"), underlying_quotient(L))
+  println(io)
   print(io, "at ", Lowercase(), inverted_set(L))
   print(io, Dedent())
 end
@@ -299,12 +301,16 @@ julia> RQL, iota = localization(RQ, U);
 
 julia> RQL
 Localization
-  of quotient of multivariate polynomial ring by ideal with 2 generators
+  of quotient
+    of multivariate polynomial ring in 2 variables x, y
+      over number field of degree 2 over QQ
+    by ideal(2*x^2 - y^3, 2*x^2 - y^5)
   at complement of prime ideal(y - 1, x - a)
 
 julia> iota
-Map from
-RQ to Localization of quotient of multivariate polynomial ring at complement of prime ideal defined by a julia-function
+Map defined by a julia-function
+  from quotient of multivariate polynomial ring by ideal(2*x^2 - y^3, 2*x^2 - y^5)
+  to localization of quotient of multivariate polynomial ring at complement of prime ideal
 ```
 """ localization(A::MPolyQuoRing, U::AbsMPolyMultSet)
 
@@ -1447,10 +1453,9 @@ function simplify(L::MPolyQuoLocRing{<:Any, <:Any, <:Any, <:Any, <:MPolyPowersOf
   W = localized_ring(L)
   I = modulus(L)
   J = modulus(underlying_quotient(L))
-  singular_assure(J)
   R = base_ring(L)
   SR = singular_poly_ring(R)
-  SJ = J.gens.S
+  SJ = singular_generators(J)
 
   # collect the output from elimpart in Singular
   l = Singular.LibPresolve.elimpart(SJ)
@@ -1503,10 +1508,9 @@ end
 
 function simplify(L::MPolyQuoRing)
   J = modulus(L)
-  singular_assure(J)
   R = base_ring(L)
   SR = singular_poly_ring(R)
-  SJ = J.gens.S
+  SJ = singular_generators(J)
 
   # collect the output from elimpart in Singular
   l = Singular.LibPresolve.elimpart(SJ)
