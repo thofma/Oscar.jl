@@ -2159,7 +2159,6 @@ function adjacent_chamber(D::SimpleChamber, v::ZZMatrix)
 end
 
 function fingerprint(D::SimpleChamber)
-  return 1
   return hnf(change_base_ring(GF(2), D.data.NtoS*D.tau))
 end
 
@@ -2304,7 +2303,7 @@ function borcherds_method1(data::SimpleBorcherdsCtx; max_nchambers=-1)
   while length(waiting_list) > 0
     ntry = ntry + 1
     if mod(ntry, 5)==0
-      @vprint :K3Auto 1 "buckets: $(length(chambers)) explored: $(nchambers) unexplored: $(length(waiting_list)) generators: $(length(automorphisms))\n"
+      @vprint :K3Auto 1 "explored: $(nchambers) unexplored: $(length(waiting_list)) generators: $(length(automorphisms))\n"
     end
     D = popfirst!(waiting_list)
     # check G-congruence
