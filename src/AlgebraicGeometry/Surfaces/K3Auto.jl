@@ -1260,7 +1260,7 @@ Based on Algorithm 5.13 in [Shi15](@cite)
 # Arguments
 - `vS`: Given with respect to the basis of `S`.
 """
-function unproject_wall(data::BorcherdsCtx, vS::ZZMatrix)
+function unproject_wall(data, vS::ZZMatrix)
   d = gcd(vec(vS*data.gramS))
   v = QQ(1,d)*(vS*basis_matrix(data.S))  # primitive in Sdual
   vsq = QQ((vS*data.gramS*transpose(vS))[1,1],d^2)
@@ -1299,10 +1299,25 @@ end
 Return return the ``L|S`` chamber adjacent to `D` via the wall defined by `v`.
 """
 function adjacent_chamber(D::K3Chamber, v::ZZMatrix)
+  # special case for fermat
   gramL = D.data.gramL
+  gramS = D.data.gramS
+  vsq = (v*gramS*transpose(v))[1,1]
+  vL = change_base_ring(ZZ, v*basis_matrix(D.data.S))
+  gramSv = gramS*transpose(v)
+  if vsq == -2
+    w = D.weyl_vector
+    weyl_new = w + (w*gramL*transpose(vL))*vL
+    walls_new = [r + (r*gramSv)*v for r in walls(D)]
+    Dnew = chamber(D.data,weyl_new, v)
+    Dnew.walls = walls_new
+    return Dnew
+  end
   dualDeltaR = D.data.dualDeltaR
   deltaR = D.data.deltaR
   dimL = ncols(gramL)
+
+
   Pv = unproject_wall(D.data, v)
   l = length(Pv)
   @hassert :K3Auto 1 length(Pv) == length(unique(Pv))
@@ -1359,7 +1374,12 @@ function adjacent_chamber(D::K3Chamber, v::ZZMatrix)
   end
   # both Weyl vectors should lie in the positive cone.
   @assert ((D.weyl_vector)*D.data.gramL*transpose(w))[1,1]>0 "$(D.weyl_vector)    $v\n"
-  return chamber(D.data, w, v)
+
+  tmp = divexact(-2*gramSv, vsq)
+  walls_new = ZZMatrix[r + (r*tmp)*v for r in walls(D)]
+  Dnew = chamber(D.data, w, v)
+  Dnew.walls = walls_new
+  return Dnew
 end
 
 
@@ -1433,14 +1453,13 @@ function borcherds_method(L::ZZLat, S::ZZLat, w::ZZMatrix; compute_OR=true, entr
   return borcherds_method(data, entropy_abort=entropy_abort, max_nchambers=max_nchambers)
 end
 
-function borcherds_method(data::BorcherdsCtx; entropy_abort::Bool, max_nchambers=-1)
+function borcherds_method(data::BorcherdsCtx; D::K3Chamber, entropy_abort::Bool, max_nchambers=-1)
   S = data.S
   # for G-sets
   F = FreeModule(ZZ,rank(S))
   # initialization
   chambers = Dict{UInt64,Vector{K3Chamber}}()
   explored = Set{K3Chamber}()
-  D = chamber(data, data.weyl_vector, zero_matrix(ZZ, 1, rank(S)))
   waiting_list = [D]
 
   automorphisms = Set{ZZMatrix}()
@@ -1495,10 +1514,11 @@ function borcherds_method(data::BorcherdsCtx; entropy_abort::Bool, max_nchambers
     @vprint :K3Auto 3 "new Weyl vector $(D.weyl_vector)\n"
     @vprint :K3Auto 3 "$D\n"
 
-    autD = aut(D)
+    autD = ZZMatrix[]#aut(D)  # Hack to be removed!
     autD = [a for a in autD if !isone(a)]
     # we need the orbits of the walls only
     if length(autD) > 0
+      autD = [matrix(g) for g in small_generating_set(matrix_group(autD))]
       for f in autD
         push!(automorphisms, f)
       end
@@ -2095,4 +2115,145 @@ function has_zero_entropy(S::ZZLat; rank_unimod=26)
   d = diagonal(rational_span(C))
 
   return maximum(push!([sign(i) for i in d],-1)), data, K3Autgrp, chambers, rational_curves
+end
+
+
+
+
+
+
+################################################################################
+# Fermat
+################################################################################
+mutable struct SimpleBorcherdsCtx
+  L::ZZLat
+  S::ZZLat
+  initial_walls::Vector{ZZMatrix} # given in the basis of L
+  initial_auts::Vector{ZZMatrix}
+  membership_test
+  gramL::ZZMatrix  # avoid a few conversions because gram_matrix(::ZZLat) -> QQMatrix
+  gramS::ZZMatrix
+  StoN::QQMatrix
+end
+
+mutable struct SimpleChamber
+  data::SimpleBorcherdsCtx
+  tau::ZZMatrix
+  parent_wall::ZZMatrix # for the spanning tree
+end
+
+@doc raw"""
+    adjacent_chamber(D::K3Chamber, v::ZZMatrix) -> K3Chamber
+
+Return return the ``L|S`` chamber adjacent to `D` via the wall defined by `v`.
+"""
+function adjacent_chamber(D::SimpleChamber, v::ZZMatrix)
+  # special case for fermat
+  gramS = D.data.gramS
+  ref = reflection(gramS, v)
+  tau2 = D.tau*ref
+  Dnew = SimpleChamber(D.data, tau2, v)
+  return Dnew
+end
+
+function walls(D::SimpleChamber)
+  gramS = D.data.gramS
+  walls0 = D.data.initial_walls
+  return ZZMatrix[r*D.tau for r in walls0]
+end
+
+function hom(D1::SimpleChamber, D2::SimpleChamber)
+  result = ZZMatrix[]
+  for g in D1.data.initial_auts
+    h = inv(D1.tau)*g*D2.tau
+    if D1.data.membership_test(h)
+      push!(result, h)
+    end
+  end
+  return result
+end
+
+aut(D::SimpleChamber) = hom(D, D)
+
+
+function borcherds_method(data::SimpleBorcherdsCtx; max_nchambers=-1)
+  S = data.S
+  # for G-sets
+  F = FreeModule(ZZ,rank(S))
+  # initialization
+  explored = Vector{SimpleChamber}()
+  n = rank(data.S)
+  D = SimpleChamber(data, identity_matrix(ZZ,n), zero_matrix(ZZ,1,n))
+  waiting_list = SimpleChamber[D]
+
+  automorphisms = Set{ZZMatrix}()
+  rational_curves = Set{ZZMatrix}()
+
+  # gogo
+  ntry = 0
+  nchambers = 0
+  while length(waiting_list) > 0
+    ntry = ntry + 1
+    if mod(ntry, 100)==0
+      @vprint :K3Auto 1 "explored: $(nchambers) unexplored: $(length(waiting_list)) generators: $(length(automorphisms))\n"
+    end
+    D = popfirst!(waiting_list)
+    # check G-congruence
+    is_explored = false
+    for E in explored
+      gg = hom(D, E)
+      if length(gg) > 0
+        # enough to add a single homomorphism
+        if !(gg[1] in automorphisms)
+          push!(automorphisms, gg[1])
+        end
+        is_explored = true
+        break
+      end
+    end
+    if is_explored
+      continue
+    end
+    push!(explored, D)
+    nchambers = nchambers + 1
+
+    autD = aut(D)
+    # we need the orbits of the walls only
+    if length(autD) > 1
+      autD = [matrix(g) for g in small_generating_set(matrix_group(autD))]
+      for f in autD
+        push!(automorphisms, f)
+      end
+      @vprint :K3Auto 1 "Found a chamber with $(length(autD)) automorphisms\n"
+      # compute the orbits
+      @vprint :K3Auto 3 "computing orbits\n"
+      Omega = [F(v) for v in walls(D)]
+      W = gset(matrix_group(autD),Omega)
+      vv = F(D.parent_wall)
+      wallsDmodAutD = [representative(w).v for w in orbits(W) if !(vv in w)]
+      @vprint :K3Auto 3 "done\n"
+    else
+      # the minus shouldn't be necessary ... but who knows?
+      wallsDmodAutD = (v for v in walls(D) if !(v==D.parent_wall || -v==D.parent_wall))
+    end
+    # compute the adjacent chambers to be explored
+    for v in wallsDmodAutD
+      d = denominator(v*data.StoN)
+      vN = d*v # primitive in N
+      if -2 == (vN*gram_matrix(S)*transpose(vN))[1,1]
+        # v comes from a rational curve
+        push!(rational_curves, v)
+        continue
+      end
+      Dv = adjacent_chamber(D, v)
+      push!(waiting_list, Dv)
+    end
+    if max_nchambers != -1 && ntry > max_nchambers
+      return data, collect(automorphisms), explored, collect(rational_curves), false
+    end
+  end
+  @vprint :K3Auto "$(length(automorphisms)) automorphism group generators\n"
+  @vprint :K3Auto "$(nchambers) congruence classes of chambers \n"
+  @vprint :K3Auto "$(length(rational_curves)) orbits of rational curves\n"
+  return data, collect(automorphisms), explored, collect(rational_curves), true
 end

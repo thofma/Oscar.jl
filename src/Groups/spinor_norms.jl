@@ -121,10 +121,13 @@ Return the matrix representation of the orthogonal reflection in the row vector 
 function reflection(gram::MatElem, v::MatElem)
   n = ncols(gram)
   E = identity_matrix(base_ring(gram), n)
-  c = base_ring(gram)(2) * ((v * gram * transpose(v)))[1,1]^(-1)
+  c =  ((v * gram * transpose(v)))[1,1]
+
+  tmp = base_ring(gram)(2) * gram * transpose(v)*v
+  tmp = divexact(tmp, c)
   ref = zero_matrix(base_ring(gram), n, n)
   for k in 1:n
-    ref[k,:] = E[k,:] - c*(E[k,:] * gram * transpose(v))*v
+    ref[k,:] = E[k,:] - E[k,:]*tmp
   end
   return ref
 end
