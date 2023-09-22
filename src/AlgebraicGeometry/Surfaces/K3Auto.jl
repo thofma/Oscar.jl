@@ -2126,13 +2126,15 @@ end
 # Fermat
 ################################################################################
 mutable struct SimpleBorcherdsCtx
+  # N < S < L
   L::ZZLat
   S::ZZLat
   initial_walls::Vector{ZZMatrix} # given in the basis of L
   initial_auts::Vector{ZZMatrix}
   membership_test
-  gramL::ZZMatrix  # avoid a few conversions because gram_matrix(::ZZLat) -> QQMatrix
   gramS::ZZMatrix
+  NtoS::ZZMatrix
+  NtoS2::fpMatrix
   StoN::QQMatrix
 end
 
@@ -2154,6 +2156,20 @@ function adjacent_chamber(D::SimpleChamber, v::ZZMatrix)
   tau2 = D.tau*ref
   Dnew = SimpleChamber(D.data, tau2, v)
   return Dnew
+end
+
+function fingerprint(D::SimpleChamber)
+  return 1
+  return hnf(change_base_ring(GF(2), D.data.NtoS*D.tau))
+end
+
+function Base.hash(D::SimpleChamber)
+  return hash(fingerprint(D))
+end
+
+function Base.show(io::IO, D::SimpleChamber)
+  println(io, "SimpleChamber")
+  show(io, MIME("text/plain"), change_base_ring(GF(2),D.tau))
 end
 
 function walls(D::SimpleChamber)
@@ -2186,27 +2202,36 @@ function borcherds_method(data::SimpleBorcherdsCtx; max_nchambers=-1)
   D = SimpleChamber(data, identity_matrix(ZZ,n), zero_matrix(ZZ,1,n))
   waiting_list = SimpleChamber[D]
 
+  chambers = Dict{UInt64,Vector{SimpleChamber}}()
+  #explored = Set{SimpleChamber}()
+  waiting_list = [D]
+
   automorphisms = Set{ZZMatrix}()
   rational_curves = Set{ZZMatrix}()
 
-  # gogo
   ntry = 0
   nchambers = 0
   while length(waiting_list) > 0
     ntry = ntry + 1
-    if mod(ntry, 100)==0
-      @vprint :K3Auto 1 "explored: $(nchambers) unexplored: $(length(waiting_list)) generators: $(length(automorphisms))\n"
+    if mod(ntry, 5)==0
+      @vprint :K3Auto 2 "largest bucket: $(maximum(length(i) for i in values(chambers))) "
+      @vprint :K3Auto 1 "buckets: $(length(chambers)) explored: $(nchambers) unexplored: $(length(waiting_list)) generators: $(length(automorphisms))\n"
     end
     D = popfirst!(waiting_list)
+    if D in explored
+      continue
+    end
     # check G-congruence
+    fp = hash(fingerprint(D))
+    if !haskey(chambers, fp)
+      chambers[fp] = SimpleChamber[]
+    end
     is_explored = false
-    for E in explored
+    for E in explored#chambers[fp]
       gg = hom(D, E)
       if length(gg) > 0
         # enough to add a single homomorphism
-        if !(gg[1] in automorphisms)
-          push!(automorphisms, gg[1])
-        end
+        push!(automorphisms, gg[1])
         is_explored = true
         break
       end
@@ -2214,17 +2239,18 @@ function borcherds_method(data::SimpleBorcherdsCtx; max_nchambers=-1)
     if is_explored
       continue
     end
+    push!(chambers[fp], D)
     push!(explored, D)
-    nchambers = nchambers + 1
+    nchambers = nchambers+1
 
-    autD = aut(D)
+    autD = aut(D)  # Hack to be removed!
     # we need the orbits of the walls only
     if length(autD) > 1
       autD = [matrix(g) for g in small_generating_set(matrix_group(autD))]
       for f in autD
         push!(automorphisms, f)
       end
-      @vprint :K3Auto 1 "Found a chamber with $(length(autD)) automorphisms\n"
+      @vprint :K3Auto 1 "Found a chamber with $(length(autD)+1) automorphisms\n"
       # compute the orbits
       @vprint :K3Auto 3 "computing orbits\n"
       Omega = [F(v) for v in walls(D)]
@@ -2249,7 +2275,88 @@ function borcherds_method(data::SimpleBorcherdsCtx; max_nchambers=-1)
       push!(waiting_list, Dv)
     end
     if max_nchambers != -1 && ntry > max_nchambers
-      return data, collect(automorphisms), explored, collect(rational_curves), false
+      return data, collect(automorphisms), reduce(append!,values(chambers), init=SimpleChamber[]), collect(rational_curves), true
+    end
+  end
+  @vprint :K3Auto "$(length(automorphisms)) automorphism group generators\n"
+  @vprint :K3Auto "$(nchambers) congruence classes of chambers \n"
+  @vprint :K3Auto "$(length(rational_curves)) orbits of rational curves\n"
+  return data, collect(automorphisms), reduce(append!,values(chambers), init=SimpleChamber[]), collect(rational_curves), true
+end
+
+
+function borcherds_method1(data::SimpleBorcherdsCtx; max_nchambers=-1)
+  S = data.S
+  # for G-sets
+  F = FreeModule(ZZ,rank(S))
+  # initialization
+  explored = Vector{SimpleChamber}()
+  n = rank(data.S)
+  D = SimpleChamber(data, identity_matrix(ZZ,n), zero_matrix(ZZ,1,n))
+  waiting_list = SimpleChamber[D]
+  waiting_list = [D]
+
+  automorphisms = Set{ZZMatrix}()
+  rational_curves = Set{ZZMatrix}()
+
+  ntry = 0
+  nchambers = 0
+  while length(waiting_list) > 0
+    ntry = ntry + 1
+    if mod(ntry, 5)==0
+      @vprint :K3Auto 1 "buckets: $(length(chambers)) explored: $(nchambers) unexplored: $(length(waiting_list)) generators: $(length(automorphisms))\n"
+    end
+    D = popfirst!(waiting_list)
+    # check G-congruence
+    is_explored = false
+    for E in explored#chambers[fp]
+      gg = hom(D, E)
+      if length(gg) > 0
+        # enough to add a single homomorphism
+        push!(automorphisms, gg[1])
+        is_explored = true
+        break
+      end
+    end
+    if is_explored
+      continue
+    end
+    push!(explored, D)
+    nchambers = nchambers+1
+
+    autD = aut(D)
+    # we need the orbits of the walls only
+    if length(autD) > 1
+      autD = [matrix(g) for g in small_generating_set(matrix_group(autD))]
+      for f in autD
+        push!(automorphisms, f)
+      end
+      @vprint :K3Auto 1 "Found a chamber with $(length(autD)+1) automorphisms\n"
+      # compute the orbits
+      @vprint :K3Auto 3 "computing orbits\n"
+      Omega = [F(v) for v in walls(D)]
+      W = gset(matrix_group(autD),Omega)
+      vv = F(D.parent_wall)
+      wallsDmodAutD = [representative(w).v for w in orbits(W) if !(vv in w)]
+      @vprint :K3Auto 3 "done\n"
+    else
+      # the minus shouldn't be necessary ... but who knows?
+      wallsDmodAutD = (v for v in walls(D) if !(v==D.parent_wall || -v==D.parent_wall))
+    end
+    # compute the adjacent chambers to be explored
+    for v in wallsDmodAutD
+      d = denominator(v*data.StoN)
+      vN = d*v # primitive in N
+      if -2 == (vN*gram_matrix(S)*transpose(vN))[1,1]
+        # v comes from a rational curve
+        push!(rational_curves, v)
+        continue
+      end
+      Dv = adjacent_chamber(D, v)
+      push!(waiting_list, Dv)
+    end
+    if max_nchambers != -1 && ntry > max_nchambers
+      return data, collect(automorphisms), explored, collect(rational_curves), true
     end
   end
   @vprint :K3Auto "$(length(automorphisms)) automorphism group generators\n"
