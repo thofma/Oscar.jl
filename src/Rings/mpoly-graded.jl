@@ -57,14 +57,13 @@ function show(io::IO, ::MIME"text/plain", W::MPolyDecRing)
   Hecke.@show_name(io, W)
   Hecke.@show_special(io, W)
   io = pretty(io)
+  R = forget_decoration(W)
+  print(io, R)
   if is_filtered(W)
-    print(io, forget_decoration(W))
     println(io, " filtrated by ")
   else
-    print(io, "$(forget_decoration(W))")
     println(io, " graded by ")
   end
-  R = forget_decoration(W)
   g = gens(R)
   print(io, Indent())
   for i = 1:ngens(R)
@@ -1288,8 +1287,9 @@ homogeneous component of Graded multivariate polynomial ring in 5 variables over
 julia> FG = gens(L[1]);
 
 julia> EMB = L[2]
-Map from
-S_[1 1] of dim 6 to S defined by a julia-function with inverse
+Map defined by a julia-function with inverse
+  from s_[1 1] of dim 6
+  to graded multivariate polynomial ring in 5 variables over QQ
 
 julia> for i in 1:length(FG) println(EMB(FG[i])) end
 x[2]*y[3]
@@ -2466,13 +2466,11 @@ function minimal_generating_set(I::MPolyIdeal{<:MPolyDecRingElem})
     # make sure to not recompute a GB from scratch on the singular
     # side if we have one
     G = first(values(I.gb))
-    singular_assure(G)
     G.gens.S.isGB = true
-    _, sing_min = Singular.mstd(G.gens.S)
+    _, sing_min = Singular.mstd(singular_generators(G, G.ord))
     return filter(!iszero, (R).(gens(sing_min)))
   else
-    singular_assure(I)
-    sing_gb, sing_min = Singular.mstd(I.gens.gens.S)
+    sing_gb, sing_min = Singular.mstd(singular_generators(I))
     ring = I.gens.Ox
     computed_gb = IdealGens(ring, sing_gb, true)
     I.gb[computed_gb.ord] = computed_gb

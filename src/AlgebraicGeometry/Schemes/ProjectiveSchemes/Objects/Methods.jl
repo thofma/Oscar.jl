@@ -10,10 +10,10 @@ function Base.show(io::IO, ::MIME"text/plain", P::AbsProjectiveScheme{<:Any, <:M
 end
 
 function Base.show(io::IO, P::AbsProjectiveScheme{<:Any, <:MPolyQuoRing})
-  io = pretty(io)
   if get(io, :supercompact, false)
-    print(io, "Scheme")
+    print(io, "Projective scheme")
   elseif get_attribute(P, :is_empty, false)
+    io = pretty(io)
     print(io, "Empty projective scheme over ")
     K = base_ring(P)
     if K == QQ
@@ -399,3 +399,35 @@ function issubset(X::AbsProjectiveScheme, Y::AbsProjectiveScheme)
   IYsat = saturation(IX, irrelevant_ideal)
   return issubset(IYsat, IXsat)
 end
+
+function Base.intersect(X::AbsProjectiveScheme, Y::AbsProjectiveScheme)
+  return intersect([X, Y])
+end
+
+function Base.intersect(comp::Vector{<:AbsProjectiveScheme})
+  @assert length(comp) > 0 "list of schemes must not be empty"
+  IP = ambient_space(first(comp))
+  @assert all(x->ambient_space(x)===IP, comp[2:end]) "schemes must have the same ambient space"
+  S = homogeneous_coordinate_ring(IP)
+  I = sum([defining_ideal(x) for x in comp])
+  result = subscheme(IP, I)
+  set_attribute!(result, :ambient_space, IP)
+  return result
+end
+
+function Base.union(X::AbsProjectiveScheme, Y::AbsProjectiveScheme)
+  return union([X, Y])
+end
+
+function Base.union(comp::Vector{<:AbsProjectiveScheme})
+  @assert length(comp) > 0 "list of schemes must not be empty"
+  IP = ambient_space(first(comp))
+  @assert all(x->ambient_space(x)===IP, comp[2:end]) "schemes must have the same ambient space"
+  S = homogeneous_coordinate_ring(IP)
+  I = intersect([defining_ideal(x) for x in comp])
+  result = subscheme(IP, I)
+  set_attribute!(result, :ambient_space, IP)
+  return result
+end
+
+

@@ -8,7 +8,7 @@ Tow, b = number_field(y^2 + 1, "b")
 NonSimRel, c = number_field([y^2 - 5 * a, y^2 - 7 * a])
 Qu, u = RationalFunctionField(QQ, "u")
 Zt, t = polynomial_ring(residue_ring(ZZ, 2), "t")
-Fin, d = FiniteField(t^2 + t + 1)
+Fin, d = finite_field(t^2 + t + 1)
 Frac = fraction_field(R)
 P7 = PadicField(7, 30)
 T = TropicalSemiring()
@@ -35,6 +35,13 @@ cases = [
 
 @testset "Serialization.Polynomials.and.Series" begin
   mktempdir() do path
+    @testset "Empty Ideal" begin
+      i = Oscar.ideal(QQ[:x, :y][1], [])
+      test_save_load_roundtrip(path, i) do loaded
+        loaded == i
+      end
+    end
+
     for case in cases
       @testset "Univariate Polynomial over $(case[4])" begin
         R, z = polynomial_ring(case[1], "z")

@@ -40,6 +40,7 @@ export BorcherdsCtx
 export ClosedEmbedding
 export ClosedSubvarietyOfToricVariety
 export CohomologyClass
+export CompleteIntersectionGerm
 export Cone
 export CoveredScheme
 export CoveredSchemeMorphism
@@ -78,6 +79,7 @@ export Halfspace
 export Hecke
 export HilbertData
 export Hyperplane
+export HypersurfaceGerm
 export IncidenceMatrix
 export K3Chamber
 export K3_surface_automorphism_group
@@ -156,6 +158,7 @@ export SimpleGlueing
 export SimplicialComplex
 export Singular
 export Sp
+export SpaceGerm
 export Spec
 export SpecMor
 export SpecOpen
@@ -229,6 +232,7 @@ export ambient_coordinates
 export ambient_dim
 export ambient_embedding
 export ambient_free_module
+export ambient_germ
 export ambient_module
 export ambient_representative
 export ambient_representatives_generators
@@ -246,8 +250,6 @@ export archimedean_solid
 export are_algebraically_independent
 export as_dictionary
 export as_gset
-export as_perm_group
-export as_polycyclic_group
 export associahedron
 export atlas_description
 export atlas_group
@@ -365,6 +367,7 @@ export complement_of_prime_ideal
 export complement_system, has_complement_system, set_complement_system
 export complete_bipartite_graph
 export complete_graph
+export complete_intersection_germ
 export complex_projective_plane
 export components
 export compose
@@ -425,6 +428,8 @@ export decoration
 export default_covering
 export default_ordering
 export defines_automorphism
+export defining_ring_element
+export defining_ring_elements
 export deglex
 export degree
 export degrees_of_generators
@@ -438,7 +443,6 @@ export demazure_character
 export denest
 export denominator
 export denominators
-export dense_row
 export depth
 export derived_series, has_derived_series, set_derived_series
 export derived_subgroup, has_derived_subgroup, set_derived_subgroup
@@ -506,8 +510,10 @@ export exterior_power
 export f_vector
 export face_fan
 export faces
+export facet_degrees
 export facet_indices
 export facet_points
+export facet_sizes
 export facets
 export factor_of_direct_product
 export factorisations
@@ -534,6 +540,7 @@ export flats
 export forget_decoration
 export forget_grading
 export forget_toric_structure
+export fp_group
 export fraction
 export fraction_field
 export fractional_cut_polytope
@@ -568,6 +575,7 @@ export generic_fractions
 export gens, has_gens
 export gens_of_rational_equivalence_classes
 export geometric_irreducible_components
+export germ_at_point
 export girth
 export gkz_vector
 export glueing_domains
@@ -622,6 +630,8 @@ export helper_images
 export helper_kappa
 export helper_ring
 export hermitian_form
+export hessian
+export hessian_matrix
 export hilbert_basis
 export hilbert_function
 export hilbert_polynomial
@@ -650,6 +660,7 @@ export hyperplane
 export hyperplanes
 export hypersimplex
 export hypersurface_complement
+export hypersurface_germ
 export hypertruncated_cube
 export icosahedron
 export id_hom
@@ -774,6 +785,7 @@ export is_invariant
 export is_inverse_of
 export is_invertible
 export is_irreducible
+export is_isolated_singularity
 export is_isomorphic
 export is_isomorphic_with_alternating_group, has_is_isomorphic_with_alternating_group, set_is_isomorphic_with_alternating_group
 export is_isomorphic_with_map
@@ -956,12 +968,14 @@ export maximal_polyhedra
 export maximal_subgroup_reps
 export maximal_subgroups, has_maximal_subgroups, set_maximal_subgroups
 export metadata
+export milnor_algebra
+export milnor_number
 export min_weights
 export minimal_betti_table
 export minimal_block_reps
 export minimal_denominators
 export minimal_faces
-export minimal_generating_set
+export minimal_generating_set, has_minimal_generating_set, set_minimal_generating_set
 export minimal_generators
 export minimal_nonfaces
 export minimal_normal_subgroups, has_minimal_normal_subgroups, set_minimal_normal_subgroups
@@ -1120,6 +1134,8 @@ export pitman_stanley_polytope
 export platonic_solid
 export point_coordinates
 export point_matrix
+export point_vector
+export point
 export points
 export pol_elementary_divisors
 export polarize
@@ -1192,9 +1208,12 @@ export random_affine_linear_polynomials
 export rank
 export rank_action
 export rational_equivalence_class
+export rational_point_coordinates
 export rational_solutions
 export rational_to_continued_fraction_hirzebruch_jung
+export ray_degrees
 export ray_indices
+export ray_vector
 export rays
 export rays_modulo_lineality
 export real_projective_plane
@@ -1306,7 +1325,6 @@ export singular_locus
 export singular_locus_reduced
 export singular_poly_ring
 export slpoly_ring
-export small_generating_set
 export small_generating_set, has_small_generating_set, set_small_generating_set
 export small_group
 export small_group_identification, has_small_group_identification
@@ -1426,7 +1444,9 @@ export vector_matrix
 export vector_space_basis
 export vector_space_dimension
 export vertex_and_ray_indices
+export vertex_figure
 export vertex_indices
+export vertex_sizes
 export vertexindices
 export vertical_connectivity
 export vertices

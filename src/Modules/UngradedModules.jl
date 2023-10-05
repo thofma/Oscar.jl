@@ -5067,7 +5067,7 @@ function hom_product(M::ModuleFP, N::ModuleFP, A::Matrix{<:ModuleFPHom})
   @assert length(tM) == size(A, 1) && length(tN) == size(A, 2)
   @assert all(ij -> domain(A[ij[1],ij[2]]) === tM[ij[1]] && codomain(A[ij[1],ij[2]]) === tN[ij[2]], Base.Iterators.ProductIterator((1:size(A, 1), 1:size(A, 2))))
   #need the canonical maps..., maybe store them as well?
-  return hom(M,N,Vector{elem_type(N)}([sum([Hecke.canonical_injection(N,j)(sum([A[i,j](Hecke.canonical_projection(M,i)(g)) for i=1:length(tM)])) for j=1:length(tN)]) for g in gens(M)]))
+  return hom(M,N,Vector{elem_type(N)}([sum([canonical_injection(N,j)(sum([A[i,j](canonical_projection(M,i)(g)) for i=1:length(tM)])) for j=1:length(tN)]) for g in gens(M)]))
 end
 # hom(prod -> X), hom(x -> prod)
 # if too much time: improve the hom(A, B) in case of A and/or B are products - or maybe not...
@@ -5570,8 +5570,7 @@ julia> F2 = free_module(R, 2)
 Free module of rank 2 over Multivariate polynomial ring in 3 variables over QQ
 
 julia> V, f = hom(F1, F2)
-(hom of (F1, F2), Map from
-V to Set of all homomorphisms from Free module of rank 3 over Multivariate polynomial ring in 3 variables over QQ to Free module of rank 2 over Multivariate polynomial ring in 3 variables over QQ defined by a julia-function with inverse)
+(hom of (F1, F2), Map: hom of (F1, F2) -> set of all homomorphisms from Free module of rank 3 over Multivariate polynomial ring in 3 variables over QQ to Free module of rank 2 over Multivariate polynomial ring in 3 variables over QQ)
 
 julia> f(V[1])
 Map with following data
@@ -5598,8 +5597,7 @@ julia> F2 = graded_free_module(Rg, [3,5])
 Graded free module Rg^1([-3]) + Rg^1([-5]) of rank 2 over Rg
 
 julia> V, f = hom(F1, F2)
-(hom of (F1, F2), Map from
-V to Set of all homomorphisms from Graded free module Rg^1([-1]) + Rg^2([-2]) of rank 3 over Rg to Graded free module Rg^1([-3]) + Rg^1([-5]) of rank 2 over Rg defined by a julia-function with inverse)
+(hom of (F1, F2), Map: hom of (F1, F2) -> set of all homomorphisms from Graded free module Rg^1([-1]) + Rg^2([-2]) of rank 3 over Rg to Graded free module Rg^1([-3]) + Rg^1([-5]) of rank 2 over Rg)
 
 julia> f(V[1])
 F1 -> F2
@@ -6355,7 +6353,7 @@ function _get_last_map_key(cc::Hecke.ComplexOfMorphisms)
   return last(Hecke.map_range(cc))
 end
 
-function _extend_free_resolution(cc::Hecke.ComplexOfMorphisms, idx::Int; algorithm::Symbol=:fres)
+function _extend_free_resolution(cc::Hecke.ComplexOfMorphisms, idx::Int)
 # assuming a free res is a chain_complex, then it will be
 # M_1 -> M_0 -> S -> 0
 #the range is 1:-1:-2 or so
@@ -6364,6 +6362,11 @@ function _extend_free_resolution(cc::Hecke.ComplexOfMorphisms, idx::Int; algorit
 # - extending lift is repeated pushfirst
 # - the idx is only used to see how many maps are missing
 
+  algorithm = get_attribute(cc, :algorithm)
+  if algorithm == nothing
+    algorithm = :fres
+    set_attribute!(cc, :algorithm, :fres)
+  end
   r = Hecke.map_range(cc)
   if idx < last(r)
     error("extending past the final zero not supported")
@@ -6371,7 +6374,7 @@ function _extend_free_resolution(cc::Hecke.ComplexOfMorphisms, idx::Int; algorit
   len_missing = idx - first(r)
   @assert len_missing > 0
   if cc.complete == true
-    error("complex is complete, cannot extend")
+    return map(cc, first(r))
   end
 
   kernel_entry          = image(cc.maps[1])[1]
@@ -6386,6 +6389,10 @@ function _extend_free_resolution(cc::Hecke.ComplexOfMorphisms, idx::Int; algorit
     res = Singular.fres(singular_kernel_entry, len, "complete")
   elseif algorithm == :lres
     error("LaScala's method is not yet available in Oscar.")
+  elseif algorithm == :mres
+    res = Singular.mres(singular_kernel_entry, len)
+  elseif algorithm == :nres
+    res = Singular.nres(singular_kernel_entry, len)
   else
     error("Unsupported algorithm $algorithm")
   end
@@ -6394,16 +6401,19 @@ function _extend_free_resolution(cc::Hecke.ComplexOfMorphisms, idx::Int; algorit
   j   = 2
 
   while j <= Singular.length(res)
+    rk = Singular.ngens(res[j])
     if is_graded(dom)
       codom = dom
       SM    = SubModuleOfFreeModule(codom, res[j])
       generator_matrix(SM)
       map = graded_map(codom, SM.matrix)
       dom = domain(map)
+      set_attribute!(dom, :name => "R^$rk")
     else
       codom = dom
       dom   = free_module(br, Singular.ngens(res[j]))
       SM    = SubModuleOfFreeModule(codom, res[j])
+      set_attribute!(dom, :name => "R^$rk")
       generator_matrix(SM)
       map = hom(dom, codom, SM.matrix)
     end
@@ -6417,7 +6427,9 @@ function _extend_free_resolution(cc::Hecke.ComplexOfMorphisms, idx::Int; algorit
     pushfirst!(cc, hom(Z, domain(cc.maps[1]), Vector{elem_type(domain(cc.maps[1]))}()))
     cc.complete = true
   end
-  return map(cc, idx)
+  set_attribute!(cc, :show => free_show)
+  maxidx = min(idx, first(Hecke.map_range(cc)))
+  return map(cc, maxidx)
 end
 
 @doc raw"""
@@ -6469,7 +6481,9 @@ julia> fr[4]
 Free module of rank 0 over Multivariate polynomial ring in 3 variables over QQ
 
 julia> fr
-C_-2 <---- C_-1 <---- C_0 <---- C_1 <---- C_2 <---- C_3 <---- C_4
+Free resolution of M
+R^2 <---- R^6 <---- R^6 <---- R^2 <---- 0
+0         1         2         3         4
 
 julia> is_complete(fr)
 true
@@ -6576,6 +6590,7 @@ function free_resolution(M::SubquoModule{<:MPolyRingElem};
   cc.fill     = _extend_free_resolution
   cc.complete = cc_complete
   set_attribute!(cc, :show => free_show, :free_res => M)
+  set_attribute!(cc, :algorithm, algorithm)
 
   return FreeResolution(cc)
 end
@@ -7299,45 +7314,64 @@ end
 
 ⊕(M::ModuleFP...) = direct_sum(M..., task = :none)
 
+@doc raw"""
+    canonical_injections(G::ModuleFP)
+
+Return the canonical injections from all components into $G$
+where $G = G_1 \oplus \cdot \oplus G_n$.
+"""
+function canonical_injections(G::ModuleFP)
+  H = get_attribute(G, :direct_product)
+  @req H !== nothing "module not a direct product"
+  return [canonical_injection(G, i) for i in 1:length(H)]
+end
 
 @doc raw"""
-    Hecke.canonical_injection(G::ModuleFP, i::Int)
+    canonical_injection(G::ModuleFP, i::Int)
 
 Return the canonical injection $G_i \to G$ where $G = G_1 \oplus \cdot \oplus G_n$.
 """
-function Hecke.canonical_injection(G::ModuleFP, i::Int)
+function canonical_injection(G::ModuleFP, i::Int)
   H = get_attribute(G, :direct_product)
-  if H === nothing
-    error("module not a direct product")
-  end
+  @req H !== nothing "module not a direct product"
   injection_dictionary = get_attribute(G, :injection_morphisms)
   if haskey(injection_dictionary, i)
     return injection_dictionary[i]
   end
-  0<i<= length(H) || error("index out of bound")
-  j = i == 1 ? 0 : sum(ngens(H[l]) for l=1:i-1)
-  emb = hom(H[i], G, Vector{elem_type(G)}([G[l+j] for l = 1:ngens(H[i])]))
+  @req 0 < i <= length(H) "index out of bound"
+  j = sum(ngens(H[l]) for l in 1:i-1; init=0)
+  emb = hom(H[i], G, Vector{elem_type(G)}([G[l+j] for l in 1:ngens(H[i])]))
   injection_dictionary[i] = emb
   return emb
 end
 
 @doc raw"""
-    Hecke.canonical_projection(G::ModuleFP, i::Int)
+    canonical_projections(G::ModuleFP)
+
+Return the canonical projections from $G$ to all components
+where $G = G_1 \oplus \cdot \oplus G_n$.
+"""
+function canonical_projections(G::ModuleFP)
+  H = get_attribute(G, :direct_product)
+  @req H !== nothing "module not a direct product"
+  return [canonical_projection(G, i) for i in 1:length(H)]
+end
+
+@doc raw"""
+    canonical_projection(G::ModuleFP, i::Int)
 
 Return the canonical projection $G \to G_i$ where $G = G_1 \oplus \cdot \oplus G_n$.
 """
-function Hecke.canonical_projection(G::ModuleFP, i::Int)
+function canonical_projection(G::ModuleFP, i::Int)
   H = get_attribute(G, :direct_product)
-  if H === nothing
-    error("module not a direct product")
-  end
+  @req H !== nothing "module not a direct product"
   projection_dictionary = get_attribute(G, :projection_morphisms)
   if haskey(projection_dictionary, i)
     return projection_dictionary[i]
   end
-  0<i<= length(H) || error("index out of bound")
-  j = i == 1 ? 0 : sum(ngens(H[l]) for l=1:i-1) 
-  pro = hom(G, H[i], Vector{elem_type(H[i])}(vcat([zero(H[i]) for l=1:j], gens(H[i]), [zero(H[i]) for l=1+j+ngens(H[i]):ngens(G)])))
+  @req 0 < i <= length(H) "index out of bound"
+  j = sum(ngens(H[l]) for l in 1:i-1; init=0) 
+  pro = hom(G, H[i], Vector{elem_type(H[i])}(vcat([zero(H[i]) for l in 1:j], gens(H[i]), [zero(H[i]) for l in 1+j+ngens(H[i]):ngens(G)])))
   projection_dictionary[i] = pro
   return pro
 end
@@ -8241,34 +8275,6 @@ function getindex(a::Hecke.SRow, b::AbstractVector{Int})
     end
   end
   return b
-end
-
-@doc raw"""
-    sparse_row(A::MatElem)
-
-Convert `A` to a sparse row. 
-`nrows(A) == 1` must hold.
-"""
-function sparse_row(A::MatElem)
-  @assert nrows(A) == 1
-  if ncols(A) == 0
-    return sparse_row(base_ring(A))
-  end
-  return Hecke.sparse_matrix(A)[1]
-end
-
-@doc raw"""
-    dense_row(r::Hecke.SRow, n::Int)
-
-Convert `r[1:n]` to a dense row, that is an AbstractAlgebra matrix.
-"""
-function dense_row(r::Hecke.SRow, n::Int)
-  R = base_ring(r)
-  A = zero_matrix(R, 1, n)
-  for i in intersect(r.pos, 1:n)
-    A[1,i] = r[i]
-  end
-  return A
 end
 
 function default_ordering(F::FreeMod)

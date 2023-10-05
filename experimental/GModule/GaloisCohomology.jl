@@ -1001,7 +1001,7 @@ function Oscar.ideal(I::IdelParent, a::GrpAbFinGenElem; coprime::Union{NfOrdIdl,
 end
 
 function Oscar.galois_group(A::ClassField)
-  return PermGroup(codomain(A.quotientmap))
+  return permutation_group(codomain(A.quotientmap))
 end
 
 """
@@ -1045,7 +1045,7 @@ function Oscar.galois_group(A::ClassField, ::QQField; idel_parent::Union{IdelPar
   @req order(automorphism_group(nf(zk))[1]) == degree(zk) "base field must be normal"
   if gcd(degree(A), degree(base_field(A))) == 1
     s, ms = split_extension(gmodule(A))
-    return permutation_group(s)[1], ms
+    return permutation_group(s), ms
   end
   if idel_parent === nothing
     idel_parent = idel_class_gmodule(base_field(A))
@@ -1081,15 +1081,15 @@ function Oscar.completion(I::IdelParent, P::NfAbsOrdIdl)
   mUp = I.L[p]
   mGp = I.D[p]
 
-  inj = Hecke.canonical_injection(I.M, p+1) #units are first
-  pro = Hecke.canonical_projection(I.M, p+1)
+  inj = canonical_injection(I.M, p+1) #units are first
+  pro = canonical_projection(I.M, p+1)
 
 
   @assert domain(inj) == codomain(pro)
 
   J = components(I.M)[p+1]
   if mKp.P == P #easy case
-    return Kp, mKp, mGp, mUp,  pro * Hecke.canonical_projection(J, 1) ,  Hecke.canonical_injection(J, 1)*inj
+    return Kp, mKp, mGp, mUp, pro * canonical_projection(J, 1), canonical_injection(J, 1)*inj
   end
 
   prm = get_attribute(J, :induce)[2]
@@ -1100,7 +1100,7 @@ function Oscar.completion(I::IdelParent, P::NfAbsOrdIdl)
   
   nKp = MapFromFunc(I.k, Kp, x->mKp(mG(pr)(x)), y->mG(inv(pr))(preimage(mKp, y)))
 
-  return Kp, nKp, mGp, mUp, pro * Hecke.canonical_projection(J, z[1]), Hecke.canonical_injection(J, z[1])*inj 
+  return Kp, nKp, mGp, mUp, pro * canonical_projection(J, z[1]), canonical_injection(J, z[1])*inj 
 end
 
 function Oscar.map_entries(mp::Union{Map, Function}, C::GrpCoh.CoChain{N, G, M}; parent::GModule) where {N, G, M}
@@ -1323,7 +1323,7 @@ mutable struct RelativeBrauerGroup
 end
 
 function Base.show(io::IO, B::RelativeBrauerGroup)
-  print(io, "Relative Brauer group for $(B.K) over $(B.k)\n")
+  print(io, "Relative Brauer group for $(B.K) over $(B.k)")
 end
 
 """
@@ -1345,6 +1345,9 @@ mutable struct RelativeBrauerGroupElem
     return r
   end
 end
+
+Oscar.elem_type(::Type{RelativeBrauerGroup}) = RelativeBrauerGroupElem
+Oscar.parent_type(::Type{RelativeBrauerGroupElem}) = RelativeBrauerGroup
 
 Oscar.parent(a::RelativeBrauerGroupElem) = a.parent
 
@@ -1386,6 +1389,10 @@ end
 
 function Base.show(io::IO, a::RelativeBrauerGroupElem)
   print(io, a.data)
+end
+
+function Base.show(io::IO, m::MIME"text/plain",a::RelativeBrauerGroupElem)
+  show(io, m, a.data)
 end
 
 function local_invariants(B::RelativeBrauerGroup, CC::GrpCoh.CoChain{2, PermGroupElem, GrpCoh.MultGrpElem{nf_elem}})
@@ -1726,11 +1733,11 @@ end
 function serre(A::IdelParent, P::Union{Integer, ZZRingElem})
   C = A.data[1]
   t = findfirst(isequal(ZZ(P)), [minimum(x) for x = A.S])
-  Inj = Hecke.canonical_injection(A.M, t+1)
-  Pro = Hecke.canonical_projection(A.M, t+1)
+  Inj = canonical_injection(A.M, t+1)
+  Pro = canonical_projection(A.M, t+1)
 
-  inj = Hecke.canonical_injection(domain(Inj), 1)
-  pro = Hecke.canonical_projection(domain(Inj), 1)
+  inj = canonical_injection(domain(Inj), 1)
+  pro = canonical_projection(domain(Inj), 1)
 
   Kp, mKp, mGp, mUp, _, _ = completion(A, A.S[t])
   @assert domain(inj) == domain(mUp) 
