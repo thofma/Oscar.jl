@@ -40,6 +40,9 @@ function _gather_tests(path::AbstractString; ignore=[])
                   # FIXME: temporarily disable AlgClosureFp tests until we resolve
                   # issue https://github.com/oscar-system/Oscar.jl/issues/2691
                   "Rings/AlgClosure.jl",
+                  # this can only run on the main process and not on distributed workers
+                  # so it is included directly in runtests
+                  "Serialization/IPC.jl",
                 ]
   append!(ignorepaths, ignore)
 
