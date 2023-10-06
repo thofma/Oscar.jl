@@ -82,7 +82,7 @@ Random.shuffle!(testlist)
 # this is to check for obsolete include statements in the tests
 @everywhere function include(str::String, mod::Module=Main)
   if joinpath(Base.source_dir(), str) in testlist
-    @warn "ignoring include of $str: all files will be included automatically"
+    @error "invalid include of $str: this file is be included automatically"
   else
     @warn "redirecting include for $str"
     Oscar._timed_include(str, mod)

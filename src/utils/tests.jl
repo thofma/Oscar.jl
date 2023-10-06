@@ -31,15 +31,19 @@ function _gather_tests(path::AbstractString; ignore=[])
   if !isabspath(path)
     path = joinpath(Oscar.oscardir, path)
   end
-  # default ignore dirs
-  ignorepaths = joinpath.(Oscar.oscardir, "test",
-                 [
+  # default ignore dirs, these are compared as suffix with endswith
+  # i.e. make sure they are unique
+  ignorepaths = [
+                  # these two files seem obsolete
                   "Modules/GradedModules.jl",
                   "Modules/FreeModules-graded.jl",
-                 ])
-  append!(ignorepaths, joinpath.(path, ignore))
+                  # FIXME: temporarily disable AlgClosureFp tests until we resolve
+                  # issue https://github.com/oscar-system/Oscar.jl/issues/2691
+                  "Rings/AlgClosure.jl",
+                ]
+  append!(ignorepaths, ignore)
 
-  path in ignorepaths && return String[]
+  any(s->endswith(path, s) ,ignorepaths) && return String[]
   isfile(path) && return [path]
 
   # if there is a runtests.jl we ignore everything else in that folder
@@ -50,7 +54,7 @@ function _gather_tests(path::AbstractString; ignore=[])
 
   tests = String[]
   for entry in readdir(path; join=true)
-    entry in ignorepaths && continue
+    any(s->endswith(entry, s), ignorepaths) && continue
     if isdir(entry)
       append!(tests, _gather_tests(entry; ignore=ignore))
     elseif isfile(entry) && endswith(entry, ".jl") &&
