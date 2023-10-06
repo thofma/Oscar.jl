@@ -97,7 +97,7 @@ stats = merge(pmap(x -> Oscar.test_module(x; new=false, timed=true), testlist)..
 # it is in the ignore list for the other tests
 push!(stats, Oscar._timed_include("Serialization/IPC.jl", Main))
 
-if haskey(ENV, "GITHUB_STEP_SUMMARY") &&
+if haskey(ENV, "GITHUB_STEP_SUMMARY")
   open(ENV["GITHUB_STEP_SUMMARY"], "a") do io
     print_stats(io, stats; fmt=PrettyTables.tf_markdown)
   end
