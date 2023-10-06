@@ -58,10 +58,12 @@ function _gather_tests(path::AbstractString; ignore=[])
   tests = String[]
   for entry in readdir(path; join=true)
     any(s->endswith(entry, s), ignorepaths) && continue
+    endswith(entry, "setup_tests.jl") && continue
+    # this is only for the main test/runtests.jl
+    endswith(entry, "runtests.jl") && continue
     if isdir(entry)
       append!(tests, _gather_tests(entry; ignore=ignore))
-    elseif isfile(entry) && endswith(entry, ".jl") &&
-        !endswith(entry, "setup_tests.jl")
+    elseif isfile(entry) && endswith(entry, ".jl")
       push!(tests, entry)
     end
   end
