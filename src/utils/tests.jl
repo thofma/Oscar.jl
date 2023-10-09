@@ -169,6 +169,7 @@ session is used.
 
 With the optional parameter `timed` the function will return a dict mapping file
 names to a named tuple with compilation times and allocations.
+This only works for `new=false`.
 
 The parameter `ignore` can be used to pass a list of `String` or `Regex` patterns.
 Test files or folders matching these will be skipped. Strings will be compared as

@@ -84,7 +84,6 @@ Random.shuffle!(testlist)
   if joinpath(Base.source_dir(), str) in testlist
     @error "invalid include of $str: this file is be included automatically"
   else
-    @warn "redirecting include for $str"
     Oscar._timed_include(str, mod)
   end
 end
