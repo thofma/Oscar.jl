@@ -28,26 +28,33 @@ function _timed_include(str::String, mod::Module=Main; use_ctime::Bool=VERSION >
 end
 
 function _gather_tests(path::AbstractString; ignore=[])
+  # default ignore patterns
+  ignorepatterns = Regex[
+                     # these two files seem obsolete
+                     r"Modules/GradedModules(\.jl)?$",
+                     r"Modules/FreeModules-graded(\.jl)?$",
+                     # FIXME: temporarily disable AlgClosureFp tests until we resolve
+                     # issue https://github.com/oscar-system/Oscar.jl/issues/2691
+                     r"Rings/AlgClosureFp(\.jl)?$",
+                     # this can only run on the main process and not on distributed workers
+                     # so it is included directly in runtests
+                     r"Serialization/IPC(\.jl)?$",
+                   ]
+  for i in ignore
+    push!(ignorepatterns, i isa AbstractString ? Regex("$i\$") : string(i))
+  end
+
+  if any(p->contains(path, p), ignorepatterns)
+    @info "ignore: $(relpath(entry, Oscar.oscardir))"
+    return String[]
+  end
+
   if !isabspath(path)
     path = joinpath(Oscar.oscardir, path)
   end
-  # default ignore dirs, these are compared as suffix with endswith
-  # i.e. make sure they are unique
-  ignorepaths = [
-                  # these two files seem obsolete
-                  "Modules/GradedModules.jl",
-                  "Modules/FreeModules-graded.jl",
-                  # FIXME: temporarily disable AlgClosureFp tests until we resolve
-                  # issue https://github.com/oscar-system/Oscar.jl/issues/2691
-                  "Rings/AlgClosureFp.jl",
-                  # this can only run on the main process and not on distributed workers
-                  # so it is included directly in runtests
-                  "Serialization/IPC.jl",
-                ]
-  append!(ignorepaths, ignore)
 
-  any(s->endswith(path, s) ,ignorepaths) && return String[]
   isfile(path) && return [path]
+  isfile("$path.jl") && return ["$path.jl"]
 
   # if there is a runtests.jl we ignore everything else in that folder
   # except for the main Oscar test dir
@@ -57,7 +64,10 @@ function _gather_tests(path::AbstractString; ignore=[])
 
   tests = String[]
   for entry in readdir(path; join=true)
-    any(s->endswith(entry, s), ignorepaths) && continue
+    if any(s->contains(relpath(entry, Oscar.oscardir), s), ignorepatterns)
+      @info "ignore: $(relpath(entry, Oscar.oscardir))"
+      continue
+    end
     endswith(entry, "setup_tests.jl") && continue
     # this is only for the main test/runtests.jl
     endswith(entry, "runtests.jl") && continue
@@ -74,7 +84,7 @@ end
 
 
 @doc raw"""
-    test_module(path::AbstractString; new::Bool = true, timed::Bool=false)
+    test_module(path::AbstractString; new::Bool = true, timed::Bool=false, ignore=[])
 
 Run the Oscar tests in `path`:
 - if `path` is relative then it will be set to `<oscardir>/test/<path>`
@@ -92,9 +102,14 @@ With the optional parameter `timed` the function will return a dict mapping file
 names to a named tuple with compilation times and allocations.
 This only works for `new=false`.
 
+The parameter `ignore` can be used to pass a list of `String` or `Regex` patterns.
+Test files or folders matching these will be skipped. Strings will be compared as
+suffixes.
+This only works for `new=false`.
+
 For experimental modules, use [`test_experimental_module`](@ref) instead.
 """
-function test_module(path::AbstractString; new::Bool=true, timed::Bool=false)
+function test_module(path::AbstractString; new::Bool=true, timed::Bool=false, ignore=[])
   julia_exe = Base.julia_cmd()
   project_path = Base.active_project()
   if !isabspath(path)
@@ -106,15 +121,8 @@ function test_module(path::AbstractString; new::Bool=true, timed::Bool=false)
     @info("spawning ", `$julia_exe --project=$project_path -e \"$cmd\"`)
     run(`$julia_exe --project=$project_path -e $cmd`)
   else
-    if isfile(path)
-      testlist = [path]
-    elseif isfile("$path.jl")
-      testlist = ["$path.jl"]
-    elseif isdir(path)
-      testlist = _gather_tests(path)
-    else
-      @req false "no such file or directory: $path[.jl]"
-    end
+    testlist = _gather_tests(path; ignore=ignore)
+    @req !isempty(testlist) "no such file or directory: $path[.jl]"
 
     @req isdefined(Base.Main, :Test) "You need to do \"using Test\""
 
@@ -146,7 +154,7 @@ end
 
 @doc raw"""
     test_experimental_module(project::AbstractString; file::AbstractString="",
-      new::Bool=true, timed::Bool=false)
+      new::Bool=true, timed::Bool=false, ignore=[])
 
 Run the Oscar tests in `experimental/<project>/test/<path>`:
 - if `path` is empty then all tests in that module are run, either via `runtests.jl` or directly.
@@ -161,11 +169,15 @@ session is used.
 With the optional parameter `timed` the function will return a dict mapping file
 names to a named tuple with compilation times and allocations.
 
+The parameter `ignore` can be used to pass a list of `String` or `Regex` patterns.
+Test files or folders matching these will be skipped. Strings will be compared as
+suffixes.
+This only works for `new=false`.
 """
 function test_experimental_module(
-  project::AbstractString; file::AbstractString="", new::Bool=true, timed::Bool=false
+  project::AbstractString; file::AbstractString="", new::Bool=true, timed::Bool=false, ignore=[]
 )
   test_file = "../experimental/$project/test/$file"
-  test_module(test_file; new, timed=timed)
+  test_module(test_file; new, timed=timed, ignore=ignore)
 end
 
