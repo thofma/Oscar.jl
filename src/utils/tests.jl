@@ -117,6 +117,7 @@ function test_module(path::AbstractString; new::Bool=true, timed::Bool=false, ig
     path = joinpath(oscardir, rel_test_path)
   end
   if new
+    @req isempty(ignore) && !timed "The `timed` and `ignore` options only work for `new=false`."
     cmd = "using Test; using Oscar; Hecke.assertions(true); Oscar.test_module(\"$entry\"; new=false);"
     @info("spawning ", `$julia_exe --project=$project_path -e \"$cmd\"`)
     run(`$julia_exe --project=$project_path -e $cmd`)
