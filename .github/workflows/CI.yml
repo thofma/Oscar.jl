@@ -37,7 +37,7 @@ jobs:
       - name: "Install custom julia"
         uses: julia-actions/install-julia-from-url@main
         with:
-          url: 'https://buildkite.com/organizations/julialang/pipelines/julia-master/builds/28614/jobs/018b1b02-1786-4d88-9c9e-f49f96ec16e6/artifacts/018b1b0e-2d6c-424b-a4cd-2bbc13f6a91d'
+          url: 'https://buildkite.com/organizations/julialang/pipelines/julia-master/builds/28616/jobs/018b1b51-bab0-44ec-8a83-c0954d786a63/artifacts/018b1b5d-fd80-496f-8e1b-20dc6ae509b1'
       - name: "Build package"
         uses: julia-actions/julia-buildpkg@v1
       - name: "limit OpenMP threads"
