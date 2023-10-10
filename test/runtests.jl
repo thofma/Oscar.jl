@@ -86,10 +86,6 @@ end
 
 @everywhere const stats_dict = Dict{String,NamedTuple}()
 
-if VERSION >= v"1.8.0"
-  @everywhere GC.enable_logging(true)
-end
-
 function print_stats(io::IO; fmt=PrettyTables.tf_unicode, max=50)
   sorted = sort(collect(stats_dict), by=x->x[2].time, rev=true)
   println(io, "### Stats per file")
