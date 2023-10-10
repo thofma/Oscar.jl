@@ -113,7 +113,10 @@ function test_module(path::AbstractString; new::Bool=true, timed::Bool=false, ig
   julia_exe = Base.julia_cmd()
   project_path = Base.active_project()
   if !isabspath(path)
-    rel_test_path = normpath("test", "$path")
+    if !startswith(path, "test")
+      path = joinpath("test", path)
+    end
+    rel_test_path = normpath(path)
     path = joinpath(oscardir, rel_test_path)
   end
   if new
