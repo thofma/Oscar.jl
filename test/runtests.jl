@@ -12,18 +12,10 @@ if VERSION >= v"1.10.0-DEV"
   jlmax = @ccall jl_gc_get_max_memory()::UInt64
   maxmem = @ccall uv_get_total_memory()::UInt64
   limmem = @ccall uv_get_constrained_memory()::UInt64
-  if limmem > 0 && limmem < maxmem
-    maxmem = limmem
-  end
-  # set the heap limit to half the available memory
-  maxmem *= 0.5
   memenv = parse(Float64, get(ENV, "OSCARCI_MAX_MEM_GB", "0")) * 2^30
   if memenv > 0
-    maxmem = memenv
-  end
-  if maxmem > 0 && maxmem < jlmax
-    println("OscarCI: Limiting memory from ", Base.format_bytes(jlmax), " to ", Base.format_bytes(maxmem));
-    @ccall jl_gc_set_max_memory(maxmem::UInt64)::Cvoid
+    println("OscarCI: Limiting memory from ", Base.format_bytes(jlmax), " to ", Base.format_bytes(memenv));
+    @ccall jl_gc_set_max_memory(memenv::UInt64)::Cvoid
   end
 end
 
@@ -116,7 +108,6 @@ end
 @everywhere const innermost = Ref(true)
 # redefine include to print and collect some extra stats
 @everywhere function include(str::String)
-  meminfo_julia()
   innermost[] = true
   # we pass the identity to avoid recursing into this function again
   @static if compiletimes
