@@ -41,11 +41,21 @@ function _gather_tests(path::AbstractString; ignore=[])
                      r"Serialization/IPC(\.jl)?$",
                    ]
   for i in ignore
-    push!(ignorepatterns, i isa AbstractString ? Regex("$i\$") : string(i))
+    if i isa Regex
+      push!(ignorepatterns, i)
+    elseif i isa AbstractString
+      if endswith(i, ".jl")
+        push!(ignorepatterns, Regex("$i\$"))
+      else
+        push!(ignorepatterns, Regex("$i(\\.jl)?\$"))
+      end
+    else
+      throw(ArgumentError("invalid ignore pattern $i"))
+    end
   end
 
   if any(p->contains(path, p), ignorepatterns)
-    @info "ignore: $(relpath(entry, Oscar.oscardir))"
+    @info "ignore: $(relpath(path, Oscar.oscardir))"
     return String[]
   end
 
