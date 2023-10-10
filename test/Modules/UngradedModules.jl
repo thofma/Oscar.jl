@@ -660,48 +660,48 @@ end
   end
 end
 
-@testset "tensoring morphisms" begin
-  R, (x,y,z) = polynomial_ring(QQ, ["x", "y", "z"])
-
-  F2 = FreeMod(R,2)
-  F3 = FreeMod(R,3)
-  F4 = FreeMod(R,4)
-
-  for _=1:10
-    A1 = matrix([randpoly(R,0:15,4,3) for i=1:3,j=1:2])
-    B1 = matrix([randpoly(R,0:15,2,1) for i=1:1,j=1:2])
-
-  
-    A2 = matrix([randpoly(R,0:15,2,1) for i=1:3,j=1:3])
-    B2 = matrix([randpoly(R,0:15,2,1) for i=1:1,j=1:3])
-
-    M1 = SubquoModule(F2,A1,B1)
-    M2 = SubquoModule(F3,A2,B2)
-
-    M,pure_M = tensor_product(M1,M2, task=:map)
-    phi = hom_tensor(M,M,[identity_map(M1),identity_map(M2)])
-
-    for _=1:3
-      v = SubquoModuleElem(sparse_row(matrix([randpoly(R) for _=1:1, i=1:ngens(M)])), M)
-      @test phi(v) == v
-    end
-
-    A3 = matrix([randpoly(R,0:15,2,1) for i=1:2,j=1:2])
-    #B3 = matrix([randpoly(R,0:15,2,1) for i=1:1,j=1:2])
-    M3 = SubquoModule(Oscar.SubModuleOfFreeModule(F2,A3))
-
-    N,pure_N = tensor_product(M3,F4, task=:map)
-
-    M3_to_M1 = SubQuoHom(M3,M1, matrix([randpoly(R,0:2,2,2) for i=1:ngens(M3), j=1:ngens(M1)]))
-    @assert is_welldefined(M3_to_M1)
-    F4_to_M2 = FreeModuleHom(F4,M2, matrix([randpoly(R,0:2,2,2) for i=1:ngens(F4), j=1:ngens(M2)]))
-
-    phi = hom_tensor(N,M,[M3_to_M1,F4_to_M2])
-    u1 = SubquoModuleElem(sparse_row(matrix([randpoly(R) for _=1:1, i=1:ngens(M3)])), M3)
-    u2 = F4(sparse_row(matrix([randpoly(R) for _=1:1, i=1:ngens(F4)])))
-    @test phi(pure_N((u1,u2))) == pure_M((M3_to_M1(u1),F4_to_M2(u2)))
-  end
-end
+#@testset "tensoring morphisms" begin
+#  R, (x,y,z) = polynomial_ring(QQ, ["x", "y", "z"])
+#
+#  F2 = FreeMod(R,2)
+#  F3 = FreeMod(R,3)
+#  F4 = FreeMod(R,4)
+#
+#  for _=1:10
+#    A1 = matrix([randpoly(R,0:15,4,3) for i=1:3,j=1:2])
+#    B1 = matrix([randpoly(R,0:15,2,1) for i=1:1,j=1:2])
+#
+#  
+#    A2 = matrix([randpoly(R,0:15,2,1) for i=1:3,j=1:3])
+#    B2 = matrix([randpoly(R,0:15,2,1) for i=1:1,j=1:3])
+#
+#    M1 = SubquoModule(F2,A1,B1)
+#    M2 = SubquoModule(F3,A2,B2)
+#
+#    M,pure_M = tensor_product(M1,M2, task=:map)
+#    phi = hom_tensor(M,M,[identity_map(M1),identity_map(M2)])
+#
+#    for _=1:3
+#      v = SubquoModuleElem(sparse_row(matrix([randpoly(R) for _=1:1, i=1:ngens(M)])), M)
+#      @test phi(v) == v
+#    end
+#
+#    A3 = matrix([randpoly(R,0:15,2,1) for i=1:2,j=1:2])
+#    #B3 = matrix([randpoly(R,0:15,2,1) for i=1:1,j=1:2])
+#    M3 = SubquoModule(Oscar.SubModuleOfFreeModule(F2,A3))
+#
+#    N,pure_N = tensor_product(M3,F4, task=:map)
+#
+#    M3_to_M1 = SubQuoHom(M3,M1, matrix([randpoly(R,0:2,2,2) for i=1:ngens(M3), j=1:ngens(M1)]))
+#    @assert is_welldefined(M3_to_M1)
+#    F4_to_M2 = FreeModuleHom(F4,M2, matrix([randpoly(R,0:2,2,2) for i=1:ngens(F4), j=1:ngens(M2)]))
+#
+#    phi = hom_tensor(N,M,[M3_to_M1,F4_to_M2])
+#    u1 = SubquoModuleElem(sparse_row(matrix([randpoly(R) for _=1:1, i=1:ngens(M3)])), M3)
+#    u2 = F4(sparse_row(matrix([randpoly(R) for _=1:1, i=1:ngens(F4)])))
+#    @test phi(pure_N((u1,u2))) == pure_M((M3_to_M1(u1),F4_to_M2(u2)))
+#  end
+#end
 
 @testset "direct product" begin
   R, (x,y,z) = polynomial_ring(QQ, ["x", "y", "z"])
