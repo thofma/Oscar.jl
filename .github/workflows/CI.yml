@@ -40,6 +40,8 @@ jobs:
           url: 'https://buildkite.com/organizations/julialang/pipelines/julia-master/builds/28614/jobs/018b1b02-1786-4d88-9c9e-f49f96ec16e6/artifacts/018b1b0e-2d6c-424b-a4cd-2bbc13f6a91d'
       - name: "Build package"
         uses: julia-actions/julia-buildpkg@v1
+      - name: "workaround..."
+        run: sed -i -e 's/""" module/"""\nmodule/g' /home/runner/.julia/packages/GAP/*/src/GAP.jl
       - name: "limit OpenMP threads"
         run: echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
       - name: "set memory limit"
