@@ -90,6 +90,32 @@ end
 sort!(testlist)
 Random.shuffle!(Oscar.get_seeded_rng(), testlist)
 
+# tests with the highest number of allocations / runtime / compilation time
+test_large = [
+              "experimental/GITFans/test/runtests.jl",
+              "experimental/GModule/test/runtests.jl",
+              "experimental/QuadFormAndIsom/test/runtests.jl",
+              "test/AlgebraicGeometry/Schemes/CoveredProjectiveSchemes.jl",
+              "test/AlgebraicGeometry/Schemes/elliptic_surface.jl",
+              "test/AlgebraicGeometry/Schemes/MorphismFromRationalFunctions.jl",
+              "test/Modules/ModulesGraded.jl",
+              "test/PolyhedralGeometry/timing.jl",
+              "test/Serialization/PolynomialsSeries.jl",
+             ]
+
+test_subset = get(ENV, "OSCAR_TEST_SUBSET", "")
+if haskey(ENV, "JULIA_PKGEVAL")
+  test_subset="short"
+end
+
+if test_subset == "short"
+  filter!(x-> !in(relpath(x, Oscar.oscardir), test_large), testlist)
+elseif test_subset = "long"
+  testlist = joinpath.(Oscar.oscardir, test_large)
+  filter!(isfile, testlist)
+end
+
+
 @everywhere testlist = $testlist
 
 # this is to check for obsolete include statements in the tests
