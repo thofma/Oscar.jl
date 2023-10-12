@@ -1,7 +1,7 @@
 if !isdefined(Main, :lie_algebra_conformance_test)
   function lie_algebra_conformance_test(
     L::LieAlgebra{C}, parentT::DataType, elemT::DataType; num_random_tests::Int=10
-  ) where {C<:RingElement}
+  ) where {C<:FieldElem}
     @testset "basic manipulation" begin
       x = L(rand(-10:10, dim(L)))
 
@@ -106,7 +106,7 @@ if !isdefined(Main, :lie_algebra_conformance_test)
     parentT::DataType=LieAlgebraModule{C},
     elemT::DataType=LieAlgebraModuleElem{C};
     num_random_tests::Int=10,
-  ) where {C<:RingElement}
+  ) where {C<:FieldElem}
     @testset "basic manipulation" begin
       v = V(rand(-10:10, dim(V)))
 
