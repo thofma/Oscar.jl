@@ -91,16 +91,25 @@ sort!(testlist)
 Random.shuffle!(Oscar.get_seeded_rng(), testlist)
 
 # tests with the highest number of allocations / runtime / compilation time
+# more or less sorted by allocations
 test_large = [
-              "experimental/GITFans/test/runtests.jl",
-              "experimental/GModule/test/runtests.jl",
-              "experimental/QuadFormAndIsom/test/runtests.jl",
-              "test/AlgebraicGeometry/Schemes/CoveredProjectiveSchemes.jl",
-              "test/AlgebraicGeometry/Schemes/elliptic_surface.jl",
-              "test/AlgebraicGeometry/Schemes/MorphismFromRationalFunctions.jl",
-              "test/Modules/ModulesGraded.jl",
+              "experimental/FTheoryTools/test/weierstrass.jl",
               "test/PolyhedralGeometry/timing.jl",
+              "experimental/GITFans/test/runtests.jl",
+              "test/AlgebraicGeometry/ToricVarieties/toric_schemes.jl",
+              "test/AlgebraicGeometry/Schemes/WeilDivisor.jl",
+              "test/Rings/NumberField.jl",
               "test/Serialization/PolynomialsSeries.jl",
+              "test/AlgebraicGeometry/Schemes/K3.jl",
+              "test/Groups/forms.jl",
+              "test/Modules/UngradedModules.jl",
+              "test/GAP/oscarinterface.jl",
+              "test/AlgebraicGeometry/Schemes/CoveredProjectiveSchemes.jl",
+              "test/AlgebraicGeometry/Schemes/MorphismFromRationalFunctions.jl",
+              "experimental/QuadFormAndIsom/test/runtests.jl",
+              "experimental/GModule/test/runtests.jl",
+              "test/Modules/ModulesGraded.jl",
+              "test/AlgebraicGeometry/Schemes/elliptic_surface.jl",
              ]
 
 test_subset = get(ENV, "OSCAR_TEST_SUBSET", "")
