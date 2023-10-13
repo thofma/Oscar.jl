@@ -133,7 +133,7 @@ stats = merge(pmap(x -> Oscar.test_module(x; new=false, timed=true), testlist)..
 
 # this needs to run here to make sure it runs on the main process
 # it is in the ignore list for the other tests
-if numprocs == 1
+if numprocs == 1 && test_subset != "short"
    push!(stats, Oscar._timed_include("Serialization/IPC.jl", Main))
 end
 
