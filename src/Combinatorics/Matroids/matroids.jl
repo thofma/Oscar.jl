@@ -22,12 +22,22 @@ end
 # function that generates the dictionary which maps the groundset to integers
 create_gs2num(E::GroundsetType) = Dict(zip(E, 1:length(E)))
 
+_pmset_to_indices(A::Polymake.Array{<:Polymake.Set{<:Integer}}) = collect.(Int, Polymake.to_one_based_indexing(A))
+_pmset_to_indices(A::Polymake.Set{<:Integer}) = collect(Int, Polymake.to_one_based_indexing(A))
+
+_indices_to_gs(A::AbstractVector{<:AbstractVector{<:Integer}}, gs::AbstractVector) = [gs[S] for S in A]
+_indices_to_gs(A::AbstractVector{<:Integer}, gs::AbstractVector) = gs[A]
+
+_gs_to_indices(s::GroundsetType, gs2num::Dict; offset=0, type::Type=Vector{Int}) = type(collect(Int, gs2num[i]+offset for i in collect(s)))
+
+_property_to_gs(M::Matroid, p::Symbol) = _indices_to_gs(_pmset_to_indices(getproperty(pm_object(M), p)), M.groundset)
+
 @doc raw"""
     Matroid(pm_matroid::Polymake.BigObjectAllocated, [E::GroundsetType])
 
 Construct a `matroid` from a `polymake` matroid `M` on the default ground set `{1,...,n}`.
 """
-function Matroid(pm_matroid::Polymake.BigObjectAllocated, E::GroundsetType=Vector{Integer}(1:pm_matroid.N_ELEMENTS))
+function Matroid(pm_matroid::Polymake.BigObjectAllocated, E::GroundsetType=collect(1:pm_matroid.N_ELEMENTS))
     return Matroid(pm_matroid, E, create_gs2num(E))
 end
 
@@ -97,7 +107,7 @@ function matroid_from_bases(bases::Union{AbstractVector{T},AbstractSet{T}}, grou
     end
 
     gs2num = create_gs2num(groundset)
-    pm_bases = Vector{Int}[[gs2num[i]-1 for i in B] for B in bases]
+    pm_bases = _gs_to_indices.(bases, Ref(gs2num); offset=-1)
     M = Polymake.matroid.Matroid(BASES=pm_bases,N_ELEMENTS=length(groundset))
     if check && !Polymake.matroid.check_basis_exchange_axiom(M.BASES)
         error("Input is not a collection of bases")
@@ -153,7 +163,7 @@ function matroid_from_nonbases(nonbases::Union{AbstractVector{T},AbstractSet{T}}
 
     gs2num = create_gs2num(groundset)
     
-    pm_nonbases = [[gs2num[i]-1 for i in B] for B in nonbases]
+    pm_nonbases = _gs_to_indices.(nonbases, Ref(gs2num); offset=-1)
     M = Polymake.matroid.Matroid(NON_BASES=pm_nonbases,N_ELEMENTS=length(groundset))
     if check && !Polymake.matroid.check_basis_exchange_axiom(M.BASES)
         error("Input is not a collection of nonbases")
@@ -206,7 +216,7 @@ function matroid_from_circuits(circuits::Union{AbstractVector{T},AbstractSet{T}}
     end
 
     gs2num = create_gs2num(groundset)
-    pm_circuits = [[gs2num[i]-1 for i in C] for C in circuits]
+    pm_circuits = _gs_to_indices.(circuits, Ref(gs2num); offset=-1)
     M = Polymake.matroid.Matroid(CIRCUITS=pm_circuits,N_ELEMENTS=length(groundset))
     #TODO check_circuit_exchange_axiom (requires an update of polymake)
     #if check && !Polymake.matroid.check_circuit_exchange_axiom(M.CIRCUITS)
@@ -258,7 +268,7 @@ function matroid_from_hyperplanes(hyperplanes::Union{AbstractVector{T},AbstractS
 
     groundset = collect(groundset)
     gs2num = create_gs2num(groundset)
-    pm_hyperplanes = [[gs2num[i]-1 for i in H] for H in hyperplanes]
+    pm_hyperplanes = _gs_to_indices.(hyperplanes, Ref(gs2num); offset=-1)
     M = Polymake.matroid.Matroid(MATROID_HYPERPLANES=pm_hyperplanes,N_ELEMENTS=length(groundset))
     #TODO implement a check if these are actually the hyperplanes of a matroid
     return Matroid(M,groundset,gs2num)
@@ -451,7 +461,7 @@ function direct_sum(M::Matroid, N::Matroid)
             gsN[i] = string(gsN[i],'\'')
         end
     end
-    return Matroid(Polymake.matroid.direct_sum(M.pm_matroid,N.pm_matroid),[M.groundset;gsN],create_gs2num([M.groundset;gsN]))
+    return Matroid(Polymake.matroid.direct_sum(pm_object(M),N.pm_matroid),[M.groundset;gsN],create_gs2num([M.groundset;gsN]))
 end
 
 direct_sum(comp::Vector{Matroid}) = foldl(direct_sum, comp)
@@ -507,7 +517,7 @@ function deletion(M::Matroid,set::GroundsetType)
             i+=1
         end
     end
-    pm_del = Polymake.matroid.deletion(M.pm_matroid, Set([M.gs2num[i]-1 for i in set]))
+    pm_del = Polymake.matroid.deletion(pm_object(M), _gs_to_indices(set, M.gs2num; offset=-1, type=Set))
     return Matroid(pm_del, sort_set, gs2num)
 end
 
@@ -631,8 +641,8 @@ function principal_extension(M::Matroid, set::GroundsetType, elem::ElementType)
     ktype = keytype(M.gs2num)
     gs2num = Dict{Union{ktype, ElementType}, Int}(M.gs2num)
     gs2num[elem] = length(M.groundset)+1
-    pm_set = Set{Int}([gs2num[i]-1 for i in set])
-    return Matroid(Polymake.matroid.principal_extension(M.pm_matroid, pm_set),[M.groundset;elem],gs2num)
+    pm_set = _gs_to_indices(set, gs2num; offset=-1, type=Set)
+    return Matroid(Polymake.matroid.principal_extension(pm_object(M), pm_set),[M.groundset;elem],gs2num)
 end
 
 @doc raw"""

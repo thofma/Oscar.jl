@@ -105,7 +105,7 @@ end
 # These correspond to all elements A of Bs such that the symmetric difference
 # with B has exactly 2 elements. 
 
-function bases_matrix_coordinates(Bs::Vector{Vector{Int}}, B::Vector{Int})
+function bases_matrix_coordinates(Bs::Vector{<:Vector{<:Int}}, B::Vector{Int})
     
     coord_bases = [b for b in Bs if length(symdiff(B,b)) == 2]
     
