@@ -12,11 +12,11 @@ if VERSION >= v"1.10.0-DEV"
   jlmax = @ccall jl_gc_get_max_memory()::UInt64
   maxmem = @ccall uv_get_total_memory()::UInt64
   limmem = @ccall uv_get_constrained_memory()::UInt64
-  memenv = parse(Float64, get(ENV, "OSCARCI_MAX_MEM_GB", "0")) * 2^30
-  if memenv > 0
-    println("OscarCI: Limiting memory from ", Base.format_bytes(jlmax), " to ", Base.format_bytes(memenv));
-    @ccall jl_gc_set_max_memory(memenv::UInt64)::Cvoid
-  end
+#  memenv = parse(Float64, get(ENV, "OSCARCI_MAX_MEM_GB", "0")) * 2^30
+#  if memenv > 0
+#    println("OscarCI: Limiting memory from ", Base.format_bytes(jlmax), " to ", Base.format_bytes(memenv));
+#    @ccall jl_gc_set_max_memory(memenv::UInt64)::Cvoid
+#  end
 end
 
 numprocs_str = get(ENV, "NUMPROCS", "1")
