@@ -27,7 +27,7 @@ jobs:
         group: [ 'short', 'long' ]
         os:
           - ubuntu-latest
-        memlimit: [ '2', '2.5', '3', '3.5', '4', '4.5', '5.0', '5.5', '6', '6.5', '7', '0']
+        dummy: [ 1, 2, 3, 4, 5 ]
 
     steps:
       - uses: actions/checkout@v3
@@ -38,16 +38,13 @@ jobs:
       - name: "Install custom julia"
         uses: julia-actions/install-julia-from-url@main
         with:
-          url: 'https://buildkite.com/organizations/julialang/pipelines/julia-release-1-dot-10/builds/88/jobs/018b3b0d-777a-4db5-b85a-9fd2eb4248ed/artifacts/018b3b16-7d36-4914-aea7-87e5962f6f94'
+          url: 'https://buildkite.com/organizations/julialang/pipelines/julia-release-1-dot-10/builds/88/jobs/018b3b0d-7cc6-434c-ab57-a34b4c88e279/artifacts/018b3b18-faef-42d1-93ac-9c8abae4deb8'
       - name: "Build package"
         uses: julia-actions/julia-buildpkg@v1
       - name: "workaround..."
         run: sed -i -e 's/""" module/"""\nmodule/g' /home/runner/.julia/packages/GAP/*/src/GAP.jl
       - name: "limit OpenMP threads"
         run: echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
-      - name: "set memory limit"
-        if: matrix.memlimit != '0'
-        run: echo "OSCARCI_MAX_MEM_GB=${{ matrix.memlimit }}" >> $GITHUB_ENV
       - name: "set test subgroup"
         if: ${{ matrix.group }} != ''
         run: echo "OSCAR_TEST_SUBSET=${{matrix.group}}" >> $GITHUB_ENV
