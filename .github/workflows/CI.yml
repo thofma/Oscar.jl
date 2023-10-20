@@ -24,6 +24,7 @@ jobs:
       matrix:
         julia-version:
           - 'nightly'
+        group: [ 'short', 'long' ]
         os:
           - ubuntu-latest
         memlimit: [ '2', '2.5', '3', '3.5', '4', '4.5', '5.0', '5.5', '6', '6.5', '7', '0']
@@ -47,6 +48,9 @@ jobs:
       - name: "set memory limit"
         if: matrix.memlimit != '0'
         run: echo "OSCARCI_MAX_MEM_GB=${{ matrix.memlimit }}" >> $GITHUB_ENV
+      - name: "set test subgroup"
+        if: ${{ matrix.group }} != ''
+        run: echo "OSCAR_TEST_SUBSET=${{matrix.group}}" >> $GITHUB_ENV
       - name: "Run tests"
         uses: julia-actions/julia-runtest@latest
         with:
