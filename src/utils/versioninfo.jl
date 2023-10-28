@@ -4,7 +4,7 @@
 # tree-hash that Pkg.jl provides and manually map this to a corresponding
 # commit.
 function _lookup_commit_from_cache(url::AbstractString, tree::AbstractString)
-   if Sys.which("git") != nothing
+   if Sys.which("git") !== nothing
       try
          path = Pkg.Types.add_repo_cache_path(url)
          if isdir(path)
@@ -19,7 +19,7 @@ end
 
 function _lookup_git_branch(dir::AbstractString; commit=false)
    info = ""
-   if Sys.which("git") != nothing &&
+   if Sys.which("git") !== nothing &&
          isdir(joinpath(dir,".git"))
       try
          ref = readchomp(`git -C $dir rev-parse --abbrev-ref HEAD`)
@@ -71,7 +71,7 @@ function versioninfo(io::IO=stdout; branch=false, jll=false, julia=false, commit
       branch = jll = julia = commit = true
    end
    print(io, "OSCAR version $(VERSION_NUMBER)")
-   println(io, branch ? _lookup_git_branch(dirname(@__DIR__); commit=commit) : "")
+   println(io, branch ? _lookup_git_branch(Oscar.oscardir; commit=commit) : "")
    println(io, "  combining:")
    _print_dependency_versions(io, cornerstones; suffix=".jl", branch=branch, commit=commit)
    if jll

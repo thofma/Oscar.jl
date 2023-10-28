@@ -221,11 +221,10 @@ function Base.show(io::IO, ::MIME"text/plain", L::MPolyQuoLocRing)
 end
 
 function Base.show(io::IO, L::MPolyQuoLocRing)
-  io = pretty(io)
   if get(io, :supercompact, false)
     print(io, "Localized quotient of multivariate polynomial ring")
   else
-    io = pretty(IOContext(io, :supercompact=>true))
+    io = IOContext(pretty(io), :supercompact=>true)
     print(io, "Localization of ")
     print(io, Lowercase(), underlying_quotient(L))
     print(io, " at ", Lowercase(), inverted_set(L))
@@ -316,31 +315,31 @@ Map defined by a julia-function
 
 ###localization is an Abstract Algebra alias for Localization
 
-function Localization(Q::MPolyQuoRing{RET}, S::MultSetType) where {RET <: RingElem, MultSetType <: AbsMultSet}
-  L = MPolyQuoLocRing(base_ring(Q), modulus(Q), S, Q, Localization(S)[1])
+function localization(Q::MPolyQuoRing{RET}, S::MultSetType) where {RET <: RingElem, MultSetType <: AbsMultSet}
+  L = MPolyQuoLocRing(base_ring(Q), modulus(Q), S, Q, localization(S)[1])
   return L, MapFromFunc(Q, L, (x->L(lift(x))))
 end
 
-function Localization(
+function localization(
     L::MPolyQuoLocRing{BRT, BRET, RT, RET, MST}, 
     S::AbsMPolyMultSet{BRT, BRET, RT, RET}
   ) where {BRT, BRET, RT, RET, MST}
   ambient_ring(S) == base_ring(L) || error("multiplicative set does not belong to the correct ring")
   issubset(S, inverted_set(L)) && return L, MapFromFunc(L, L, x->x)
   U = inverted_set(L)*S
-  W = MPolyQuoLocRing(base_ring(L), modulus(underlying_quotient(L)), U, underlying_quotient(L), Localization(U)[1])
+  W = MPolyQuoLocRing(base_ring(L), modulus(underlying_quotient(L)), U, underlying_quotient(L), localization(U)[1])
   return W, MapFromFunc(L, W, (x->W(lifted_numerator(x), lifted_denominator(x), check=false)))
 end
 
 function MPolyQuoLocRing(R::RT, I::Ideal{RET}, T::MultSetType) where {RT<:MPolyRing, RET<:MPolyRingElem, MultSetType<:AbsMultSet} 
-  return MPolyQuoLocRing(R, I, T, quo(R, I)[1], Localization(T)[1])
+  return MPolyQuoLocRing(R, I, T, quo(R, I)[1], localization(T)[1])
 end
 
 function MPolyQuoLocRing(R::RT) where {RT<:MPolyRing} 
   I = ideal(R, zero(R))
   Q, _ = quo(R, I)
   U = units_of(R)
-  W, _ = Localization(U)
+  W, _ = localization(U)
   return MPolyQuoLocRing(R, I, U, Q, W)
 end
 
@@ -348,7 +347,7 @@ function MPolyQuoLocRing(Q::RT) where {RT<:MPolyQuoRing}
   R = base_ring(Q)
   I = modulus(Q)
   U = units_of(R)
-  W, _ = Localization(U)
+  W, _ = localization(U)
   return MPolyQuoLocRing(R, I, U, Q, W)
 end
 
@@ -576,7 +575,7 @@ Complement
 
 julia> RQ, p = quo(R, I);
 
-julia> RQL, iota = Localization(RQ, U);
+julia> RQL, iota = localization(RQ, U);
 
 julia> is_unit(iota(p(x)))
 true
@@ -1118,48 +1117,38 @@ end
 
 ### printing
 function Base.show(io::IO, ::MIME"text/plain", phi::MPolyQuoLocalizedRingHom)
-  R = base_ring(domain(phi))
-  psi = restricted_map(phi)
   io = pretty(io)
-  println(io, "Ring homomorphism")
+  println(IOContext(io, :supercompact => true), phi)
   print(io, Indent())
   println(io, "from ", Lowercase(), domain(phi))
-  println(io, "to   ", Lowercase(), codomain(phi))
-  print(io, Dedent())
-  println(io,"defined by")
-  print(io, Indent())
-  if is_unicode_allowed()
-    for i in 1:ngens(R)-1
-      println(io, "$(R[i]) ↦ $(psi(R[i]))")
-    end
-    n = ngens(R)
-    println(io, "$(R[n]) ↦ $(psi(R[n]))")
-  else
-    for i in 1:ngens(R)-1
-      println(io, "$(R[i]) -> $(psi(R[i]))")
-    end
-    n = ngens(R)
-    print(io, "$(R[n]) -> $(psi(R[n]))")
+  println(io, "to ", Lowercase(), codomain(phi))
+  println(io, Dedent(), "defined by", Indent())
+  R = base_ring(domain(phi))
+  psi = restricted_map(phi)
+  to = is_unicode_allowed() ? " ↦ " : " -> "
+  for i in 1:ngens(R)-1
+    println(io, R[i], to, psi(R[i]))
   end
+  n = ngens(R)
+  print(io, R[n], to, psi(R[n]))
   print(io, Dedent())
 end
 
 function Base.show(io::IO, phi::MPolyQuoLocalizedRingHom)
-  R = base_ring(domain(phi))
-  psi = restricted_map(phi)
   if get(io, :supercompact, false)
     print(io, "Ring homomorphism")
   else
-    io = IOContext(io, :supercompact=>true)
+    R = base_ring(domain(phi))
+    psi = restricted_map(phi)
     io = pretty(io)
-    print(io, "hom: ")
-    print(IOContext(io, :supercompact=>true), domain(phi))
+    io = IOContext(io, :supercompact=>true)
+    print(io, "hom: ", domain(phi))
     if is_unicode_allowed()
       print(io, " → ")
     else
       print(io, " -> ")
     end
-    print(IOContext(io, :supercompact=>true), codomain(phi))
+    print(io, codomain(phi))
   end
 end
 
@@ -1636,7 +1625,7 @@ julia> RQ,phiQ = quo(R,Q);
 
 julia> T = MPolyComplementOfKPointIdeal(R,[0,0,0,0]);
 
-julia> RQL, phiQL = Localization(RQ,T);
+julia> RQL, phiQL = localization(RQ,T);
 
 julia> I = ideal(RQL,RQL.([x,z]))
 Ideal
@@ -1767,7 +1756,7 @@ end
 ### printing
 function Base.show(io::IO,::MIME"text/plain", I::MPolyQuoLocalizedIdeal)
   n = ngens(I)
-  io = pretty(IOContext(io,:supercompact=>true))
+  io = IOContext(pretty(io), :supercompact=>true)
   println(io, "Ideal")
   println(io, Indent(), "of ", Lowercase(), base_ring(I))
   if n > 0
@@ -2232,7 +2221,7 @@ If the localization is at a point, a minimal set of generators is returned.
 """
 @attr Vector{<:MPolyQuoLocRingElem} function small_generating_set(
       I::MPolyQuoLocalizedIdeal{<:MPolyQuoLocRing{<:Field, <:FieldElem,
-                                          <:MPolyRing, <:MPolyElem,
+                                          <:MPolyRing, <:MPolyRingElem,
                                           <:MPolyComplementOfKPointIdeal},
                               <:Any,<:Any}
   )
@@ -2245,7 +2234,7 @@ end
 
 function small_generating_set(
     I::MPolyQuoLocalizedIdeal{<:MPolyQuoLocRing{<:Field, <:FieldElem,
-                                          <:MPolyRing, <:MPolyElem,
+                                          <:MPolyRing, <:MPolyRingElem,
                                           <:MPolyPowersOfElement}
                           }
   )
@@ -2255,3 +2244,25 @@ function small_generating_set(
   J = pre_image_ideal(I)
   return filter(!iszero, Q.(small_generating_set(J)))
 end
+
+dim(R::MPolyQuoLocRing{<:Field, <:FieldElem, <:MPolyRing, <:MPolyRingElem, <:MPolyComplementOfPrimeIdeal}) = dim(saturated_ideal(modulus(R))) - dim(prime_ideal(inverted_set(R)))
+
+########################################################################
+# Localizations of graded rings                                        #
+########################################################################
+function is_graded(L::MPolyQuoLocRing{<:Ring, <:RingElem, <:MPolyDecRing})
+  return true
+end
+
+function grading_group(L::MPolyQuoLocRing{<:Ring, <:RingElem, <:MPolyDecRing})
+  return grading_group(base_ring(L))
+end
+
+function degree(a::MPolyQuoLocRingElem{<:Ring, <:RingElem, <:MPolyDecRing})
+  return degree(numerator(a)) - degree(denominator(a))
+end
+
+function is_homogeneous(a::MPolyQuoLocRingElem{<:Ring, <:RingElem, <:MPolyDecRing})
+  return is_homogeneous(numerator(a)) && is_homogeneous(denominator(a))
+end
+
