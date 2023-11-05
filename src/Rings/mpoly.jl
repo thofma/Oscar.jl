@@ -1223,19 +1223,10 @@ end
 #
 ##############################################################################
 
-#=
-function factor(f::MPolyRingElem)
-  I = ideal(parent(f), [f])
-  fS = Singular.factor(I.gens[Val(:S), 1])
-  R = parent(f)
-  return Nemo.Fac(R(fS.unit), Dict(R(k) =>v for (k,v) = fS.fac))
-end
-=#
-
 # generic fallback since this is not implemented specifically anywhere yet
-function is_irreducible(a::MPolyRingElem)
+function is_irreducible(a::RingElem)  # TODO: move to AA or so?
   af = factor(a)
-  return !(length(af.fac) > 1 || any(x->x>1, values(af.fac)))
+  return length(af) == 1 && all(isone, values(af.fac))
 end
 
 ################################################################################

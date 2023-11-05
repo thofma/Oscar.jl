@@ -8132,8 +8132,8 @@ function register_morphism!(f::ModuleFPHom)
 end
 
 #############################
-#TODO move to Hecke
-#  re-evaluate and use or not
+# TODO move to Hecke
+#   re-evaluate and use or not
 
 function getindex(r::Hecke.SRow, u::AbstractUnitRange)
   R = base_ring(r)
@@ -8181,9 +8181,6 @@ function default_ordering(F::FreeMod)
   end
   return default_ordering(base_ring(F))*lex(gens(F))
 end
-
-##############################
-#TODO: move to Singular.jl ?
 
 function _reduce(a::Singular.smodule, b::Singular.smodule)
   @assert b.isGB

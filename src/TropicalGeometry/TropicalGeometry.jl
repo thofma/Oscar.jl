@@ -42,8 +42,6 @@ end
 # to make their handling similar to that of integers
 ###
 gcd(F::Vector{QQPolyRingElem}) = reduce(gcd, F)
-gcd(F::QQPolyRingElem...) = reduce(gcd, F)
-
 
 
 include("variety_supertype.jl")

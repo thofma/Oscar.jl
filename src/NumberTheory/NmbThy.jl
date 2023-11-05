@@ -85,7 +85,7 @@ end
 
 norm_equation(R::Hecke.NfRelOrd{nf_elem,Hecke.NfOrdFracIdl}, a::NfAbsOrdElem{AnticNumberField,nf_elem}) = map(x -> R(evaluate(x)), norm_equation_fac_elem(R, a))
 
-function is_irreducible(a::NfAbsOrdElem{AnticNumberField,nf_elem})
+function is_irreducible(a::NfAbsOrdElem{AnticNumberField,nf_elem}) # TODO: move to Hecke
   if iszero(a)
     return false
   end
@@ -235,7 +235,7 @@ end
 
 ################################################################################
 #
-#   disc_log
+#   disc_log   TODO: move to Hecke
 #
 @doc raw"""
     disc_log(b::T, x::T) where {T <: FinFieldElem}

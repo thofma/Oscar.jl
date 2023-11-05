@@ -33,7 +33,7 @@ function apply_automorphism(f::AutGrpAbTorElem, x::AbTorElem, check::Bool=true)
   A = parent(f)
   domGap = parent(xgap)
   imgap = typeof(xgap)(domGap, GAPWrap.Image(f.X,xgap.X))
-  return to_oscar(imgap)
+  return to_oscar(imgap)::typeof(x)
 end
  
 (f::AutGrpAbTorElem)(x::AbTorElem)  = apply_automorphism(f, x, true)
@@ -209,7 +209,7 @@ end
 
 Return the full orthogonal group of this torsion quadratic module.
 """
-@attr AutomorphismGroup function orthogonal_group(T::TorQuadModule)
+@attr AutomorphismGroup{TorQuadModule} function orthogonal_group(T::TorQuadModule)
   if is_trivial(abelian_group(T))
     return _orthogonal_group(T, ZZMatrix[identity_matrix(ZZ, ngens(T))], check = false)
   elseif is_semi_regular(T)
