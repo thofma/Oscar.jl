@@ -2131,6 +2131,7 @@ mutable struct SimpleBorcherdsCtx
   S::ZZLat
   initial_walls::Vector{ZZMatrix} # given in the basis of L
   initial_auts::Vector{ZZMatrix}
+  initial_auts2::Vector{fpMatrix}
   membership_test
   gramS::ZZMatrix
   NtoS::ZZMatrix
@@ -2149,6 +2150,21 @@ function ==(x::SimpleChamber, y::SimpleChamber)
   return x.tau == y.tau
 end
 
+function reflection(gram::ZZMatrix, v::ZZMatrix)
+  n = ncols(gram)
+  # E = identity_matrix(base_ring(gram), n)
+  gramv = gram * transpose(v)
+  c =  (v * gramv)[1,1]
+
+  ref = -2 * gramv * v
+  divexact!(ref,ref, c)
+  for k in 1:n
+    ref[k,k] = ref[k,k] + 1
+  end
+  return ref
+end
+
+
 @doc raw"""
     adjacent_chamber(D::K3Chamber, v::ZZMatrix) -> K3Chamber
 
@@ -2164,7 +2180,7 @@ function adjacent_chamber(D::SimpleChamber, v::ZZMatrix)
 end
 
 function fingerprint(D::SimpleChamber)
-  return hnf(change_base_ring(GF(2), D.data.NtoS)*change_base_ring(GF(2),D.tau))
+  return hnf(D.data.NtoSmod2*change_base_ring(GF(2),D.tau))
 end
 
 function Base.hash(D::SimpleChamber)
@@ -2185,10 +2201,28 @@ end
 function hom(D1::SimpleChamber, D2::SimpleChamber)
   result = ZZMatrix[]
   tau1inv = inv(D1.tau)
+
+  t1 = change_base_ring(GF(2),tau1inv)
+  t2 = change_base_ring(GF(2), D2.tau)
+  for (i,g2) in enumerate(D1.data.initial_auts2)
+    h2 = t1*g2*t2
+    if D1.data.membership_test(h2)
+      g = D1.data.initial_auts[i]
+      h = tau1inv*g*D2.tau
+      push!(result, h)
+    end
+  end
+  return result
+end
+
+function hom_first(D1::SimpleChamber, D2::SimpleChamber)
+  result = ZZMatrix[]
+  tau1inv = inv(D1.tau)
   for g in D1.data.initial_auts
     h = tau1inv*g*D2.tau
     if D1.data.membership_test(h)
       push!(result, h)
+      return result
     end
   end
   return result
@@ -2202,17 +2236,16 @@ function borcherds_method(data::SimpleBorcherdsCtx; max_nchambers=-1)
   # for G-sets
   F = FreeModule(ZZ,rank(S), cached=false)
   # initialization
-  explored = Vector{SimpleChamber}()
   n = rank(data.S)
-  D = SimpleChamber(data, identity_matrix(ZZ,n), zero_matrix(ZZ,1,n))
+  D = SimpleChamber(data, identity_matrix(ZZ, n), zero_matrix(ZZ, 1, n))
   waiting_list = SimpleChamber[D]
 
   chambers = Dict{UInt64,Vector{SimpleChamber}}()
-  #explored = Set{SimpleChamber}()
   waiting_list = [D]
 
   automorphisms = Set{ZZMatrix}()
   rational_curves = Set{ZZMatrix}()
+
 
   ntry = 0
   nchambers = 0
@@ -2223,17 +2256,14 @@ function borcherds_method(data::SimpleBorcherdsCtx; max_nchambers=-1)
       @vprint :K3Auto 1 "buckets: $(length(chambers)) explored: $(nchambers) unexplored: $(length(waiting_list)) generators: $(length(automorphisms))\n"
     end
     D = popfirst!(waiting_list)
-    if D in explored
-      continue
-    end
     # check G-congruence
     fp = hash(fingerprint(D))
     if !haskey(chambers, fp)
       chambers[fp] = SimpleChamber[]
     end
     is_explored = false
-    for E in explored#chambers[fp]
-      gg = hom(D, E)
+    for E in chambers[fp]
+      gg = hom_first(D, E)
       if length(gg) > 0
         # enough to add a single homomorphism
         push!(automorphisms, gg[1])
@@ -2245,10 +2275,9 @@ function borcherds_method(data::SimpleBorcherdsCtx; max_nchambers=-1)
       continue
     end
     push!(chambers[fp], D)
-    push!(explored, D)
     nchambers = nchambers+1
 
-    autD = aut(D)  # Hack to be removed!
+    autD = aut(D)
     # we need the orbits of the walls only
     if length(autD) > 1
       autD = [matrix(g) for g in small_generating_set(matrix_group(autD))]
