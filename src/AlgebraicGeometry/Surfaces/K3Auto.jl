@@ -2180,7 +2180,7 @@ function adjacent_chamber(D::SimpleChamber, v::ZZMatrix)
 end
 
 function fingerprint(D::SimpleChamber)
-  return hnf(D.data.NtoSmod2*change_base_ring(GF(2),D.tau))
+  return hnf(D.data.NtoSmod2*change_base_ring(GF(2),inv(D.tau)))
 end
 
 function Base.hash(D::SimpleChamber)
@@ -2257,12 +2257,14 @@ function borcherds_method(data::SimpleBorcherdsCtx; max_nchambers=-1)
     end
     D = popfirst!(waiting_list)
     # check G-congruence
-    fp = hash(fingerprint(D))
-    if !haskey(chambers, fp)
-      chambers[fp] = SimpleChamber[]
+    fp = fingerprint(D)
+    hfp = hash(fp)
+    if !haskey(chambers, hfp)
+      chambers[hfp] = SimpleChamber[]
     end
     is_explored = false
-    for E in chambers[fp]
+    for E in chambers[hfp]
+      fp == fingerprint(E) || continue
       gg = hom_first(D, E)
       if length(gg) > 0
         # enough to add a single homomorphism
@@ -2274,7 +2276,7 @@ function borcherds_method(data::SimpleBorcherdsCtx; max_nchambers=-1)
     if is_explored
       continue
     end
-    push!(chambers[fp], D)
+    push!(chambers[hfp], D)
     nchambers = nchambers+1
 
     autD = aut(D)
