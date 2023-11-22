@@ -2001,7 +2001,7 @@ function _convert_sblock(nvars::Int, o::Singular.sorder_block, lastvar::Int)
   i = collect(lastvar+1:newlastvar)
   if o.order == Singular.ringorder_lp
     return SymbOrdering(:lex, i), newlastvar
-  elseif o.order == Singular.ringorder_rp
+  elseif o.order == Singular.ringorder_ip
     return SymbOrdering(:revlex, i), newlastvar
   elseif o.order == Singular.ringorder_Dp
     return SymbOrdering(:deglex, i), newlastvar
